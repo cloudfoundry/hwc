@@ -13,8 +13,6 @@ import (
 	"unsafe"
 
 	"github.com/docker/distribution/uuid"
-
-	. "github.com/greenhouse-org/hwc-buildpack/common"
 )
 
 var appRootPath string
@@ -206,4 +204,15 @@ func (a *App) configure() error {
 	}
 
 	return nil
+}
+
+func CheckErr(err error) {
+	if err != nil {
+		Fail(err)
+	}
+}
+
+func Fail(err error) {
+	fmt.Fprintf(os.Stderr, "\n%s\n", err)
+	os.Exit(1)
 }
