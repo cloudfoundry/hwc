@@ -99,8 +99,8 @@ const ApplicationHostConfig = `<?xml version="1.0" encoding="UTF-8"?>
 
     <sites>
       <siteDefaults>
-        <logFile logFormat="W3C" directory="%SystemDrive%\inetpub\logs\LogFiles" />
-        <traceFailedRequestsLogging directory="%SystemDrive%\inetpub\logs\FailedReqLogFiles" enabled="true" maxLogFileSizeKB="1024" maxLogFiles="20" />
+        <logFile logFormat="W3C" directory="{{.TempDirectory}}\LogFiles" />
+        <traceFailedRequestsLogging enabled="false" />
       </siteDefaults>
       <applicationDefaults applicationPool="AppPool{{.Port}}" />
       <virtualDirectoryDefaults allowSubDirConfig="true" />
@@ -182,7 +182,7 @@ const ApplicationHostConfig = `<?xml version="1.0" encoding="UTF-8"?>
       <!--<add name="RequestMonitorModule" image="%windir%\System32\inetsrv\iisreqs.dll" />-->
     </globalModules>
 
-    <httpCompression directory="%SystemDrive%\inetpub\temp\IIS Temporary Compressed Files">
+    <httpCompression directory="{{.TempDirectory}}\IIS Temporary Compressed Files">
       <scheme name="gzip" dll="%Windir%\system32\inetsrv\gzip.dll" />
       <staticTypes>
         <add mimeType="text/*" enabled="true" />
