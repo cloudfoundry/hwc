@@ -28,7 +28,7 @@ var _ = Describe("HWC", func() {
 	)
 
 	BeforeEach(func() {
-		binaryPath, err = Build("github.com/greenhouse-org/hwc-buildpack/hwc")
+		binaryPath, err = Build("github.com/cloudfoundry-incubator/hwc/hwc")
 		Expect(err).ToNot(HaveOccurred())
 		tmpDir, err = ioutil.TempDir("", "")
 		Expect(err).ToNot(HaveOccurred())

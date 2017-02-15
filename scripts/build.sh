@@ -5,4 +5,4 @@ BINDIR=$ROOTDIR/bin
 
 set -ex
 
-GOOS=windows go build -o $BINDIR/hwc.exe github.com/greenhouse-org/hwc/hwc
+GOOS=windows go build -o $BINDIR/hwc.exe github.com/cloudfoundry-incubator/hwc/hwc
