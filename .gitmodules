@@ -1,0 +1,12 @@
+[submodule "hwc/vendor/github.com/onsi/ginkgo"]
+	path = hwc/vendor/github.com/onsi/ginkgo
+	url = https://github.com/onsi/ginkgo.git
+	branch = master
+[submodule "hwc/vendor/github.com/onsi/gomega"]
+	path = hwc/vendor/github.com/onsi/gomega
+	url = https://github.com/onsi/gomega.git
+	branch = master
+[submodule "hwc/vendor/github.com/docker/distribution"]
+	path = hwc/vendor/github.com/docker/distribution
+	url = https://github.com/docker/distribution
+	branch = master
