@@ -23,5 +23,4 @@ _testmain.go
 *.test
 *.prof
 
-# Buildpack zip files
-*buildpack*.zip
+bin/
