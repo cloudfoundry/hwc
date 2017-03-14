@@ -25,10 +25,10 @@ ginkgo -r -race
 
 ### Running
 
-When web applications are pushed to Cloud Foundry they are pushed out to one or more Windows cells and run via hwc.exe. For development purposes you can run an ASP.NET web application much like IISExpress by directly invoking hwc.exe.
+When web applications are pushed to Cloud Foundry they are pushed out to one or more Windows cells and run via `hwc.exe`. For development purposes you can run an ASP.NET web application much like IISExpress by directly invoking `hwc.exe`.
 
 1. Install the following Windows features: Hostable Web Core, ASP.NET 4.6, Websockets.
-1. [Build](https://github.com/cloudfoundry-incubator/hwc) hwc.exe, or [Download](https://github.com/cloudfoundry-incubator/hwc/releases/) the prebuilt binary from the GitHub releases page.
+1. [Build](https://github.com/cloudfoundry-incubator/hwc#building) hwc.exe, or [Download](https://github.com/cloudfoundry-incubator/hwc/releases/) the prebuilt binary from the GitHub releases page.
 1. From PowerShell start the web server: `& { $env:PORT=8080; .\hwc.exe -appRootPath "C:\wwwroot\inetpub\myapproot" }`. Ensure the appRootPath points to a directory with a ready to run ASP.NET application.
 
-You should now be able to browse to `http://localhost:8080/` and even attach a debugger and set breakpoints to the hwc.exe process if so desired.
+You should now be able to browse to `http://localhost:8080/` and even attach a debugger and set breakpoints to the `hwc.exe` process if so desired.
