@@ -82,7 +82,7 @@ var _ = Describe("HWC", func() {
 		})
 	})
 
-	Context("Given that I have an ASP.NET MVC application", func() {
+	Context("Given that I have an ASP.NET MVC application (nora)", func() {
 		var (
 			session *Session
 			err     error
@@ -107,7 +107,7 @@ var _ = Describe("HWC", func() {
 
 			body, err := ioutil.ReadAll(res.Body)
 			Expect(err).ToNot(HaveOccurred())
-			Expect(string(body)).To(Equal(fmt.Sprintf(`"hello i am %s"`, APP_NAME)))
+			Expect(string(body)).To(Equal(fmt.Sprintf(`"hello i am %s running on http://localhost:%s/"`, APP_NAME, APP_PORT)))
 		})
 
 		It("correctly utilizes the USERPROFILE temp directory", func() {
@@ -156,7 +156,7 @@ var _ = Describe("HWC", func() {
 
 			body, err := ioutil.ReadAll(res.Body)
 			Expect(err).ToNot(HaveOccurred())
-			Expect(string(body)).To(Equal(fmt.Sprintf(`"hello i am %s"`, APP_NAME)))
+			Expect(string(body)).To(Equal(fmt.Sprintf(`"hello i am %s running on http://localhost:%s/"`, APP_NAME, APP_PORT)))
 
 			sendCtrlBreak(session)
 			Eventually(session, 10*time.Second).Should(Say("Server Shutdown"))
