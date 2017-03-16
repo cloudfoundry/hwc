@@ -1,7 +1,0 @@
-#!/usr/bin/env bash
-set -uex
-
-dir=${0%/*}
-APPNAME=${1:-"nora"}
-$dir/../make_an_app $dir/NoraPublished $APPNAME -b hwc_buildpack --random-route
-cf start $APPNAME
