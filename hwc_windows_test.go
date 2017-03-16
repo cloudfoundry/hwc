@@ -68,7 +68,7 @@ var _ = Describe("HWC", func() {
 		It("errors", func() {
 			session, err := startApp(APP_NAME, "", tmpDir)
 			Expect(err).ToNot(HaveOccurred())
-			Eventually(session).Should(Exit(1))
+			Eventually(session, 10*time.Second).Should(Exit(1))
 			Eventually(session.Err).Should(Say("Missing PORT environment variable"))
 		})
 	})
@@ -77,7 +77,7 @@ var _ = Describe("HWC", func() {
 		It("errors", func() {
 			session, err := startApp(APP_NAME, APP_PORT, "")
 			Expect(err).ToNot(HaveOccurred())
-			Eventually(session).Should(Exit(1))
+			Eventually(session, 10*time.Second).Should(Exit(1))
 			Eventually(session.Err).Should(Say("Missing USERPROFILE environment variable"))
 		})
 	})
@@ -91,7 +91,7 @@ var _ = Describe("HWC", func() {
 		BeforeEach(func() {
 			session, err = startApp("nora", APP_PORT, tmpDir)
 			Expect(err).ToNot(HaveOccurred())
-			Eventually(session).Should(Say("Server Started"))
+			Eventually(session, 10*time.Second).Should(Say("Server Started"))
 		})
 
 		AfterEach(func() {
@@ -148,7 +148,7 @@ var _ = Describe("HWC", func() {
 		It("runs on the specified port", func() {
 			session, err := startApp("asp-classic", APP_PORT, tmpDir)
 			Expect(err).ToNot(HaveOccurred())
-			Eventually(session).Should(Say("Server Started"))
+			Eventually(session, 10*time.Second).Should(Say("Server Started"))
 
 			url := fmt.Sprintf("http://localhost:%s", APP_PORT)
 			res, err := http.Get(url)
