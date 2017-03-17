@@ -7,4 +7,4 @@ mkdir -p $BINDIR
 
 set -ex
 
-GOOS=windows go build -o $BINDIR/hwc.exe github.com/cloudfoundry-incubator/hwc/hwc
+GOOS=windows go build -o $BINDIR/hwc.exe github.com/cloudfoundry-incubator/hwc
