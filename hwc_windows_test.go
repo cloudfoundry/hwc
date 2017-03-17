@@ -28,7 +28,7 @@ var _ = Describe("HWC", func() {
 	)
 
 	BeforeEach(func() {
-		binaryPath, err = Build("github.com/cloudfoundry-incubator/hwc/hwc")
+		binaryPath, err = Build("github.com/cloudfoundry-incubator/hwc")
 		Expect(err).ToNot(HaveOccurred())
 		tmpDir, err = ioutil.TempDir("", "")
 		Expect(err).ToNot(HaveOccurred())
@@ -68,7 +68,7 @@ var _ = Describe("HWC", func() {
 		It("errors", func() {
 			session, err := startApp(APP_NAME, "", tmpDir)
 			Expect(err).ToNot(HaveOccurred())
-			Eventually(session).Should(Exit(1))
+			Eventually(session, 10*time.Second).Should(Exit(1))
 			Eventually(session.Err).Should(Say("Missing PORT environment variable"))
 		})
 	})
@@ -77,12 +77,12 @@ var _ = Describe("HWC", func() {
 		It("errors", func() {
 			session, err := startApp(APP_NAME, APP_PORT, "")
 			Expect(err).ToNot(HaveOccurred())
-			Eventually(session).Should(Exit(1))
+			Eventually(session, 10*time.Second).Should(Exit(1))
 			Eventually(session.Err).Should(Say("Missing USERPROFILE environment variable"))
 		})
 	})
 
-	Context("Given that I have an ASP.NET MVC application", func() {
+	Context("Given that I have an ASP.NET MVC application (nora)", func() {
 		var (
 			session *Session
 			err     error
@@ -91,7 +91,7 @@ var _ = Describe("HWC", func() {
 		BeforeEach(func() {
 			session, err = startApp("nora", APP_PORT, tmpDir)
 			Expect(err).ToNot(HaveOccurred())
-			Eventually(session).Should(Say("Server Started"))
+			Eventually(session, 10*time.Second).Should(Say("Server Started"))
 		})
 
 		AfterEach(func() {
@@ -107,7 +107,7 @@ var _ = Describe("HWC", func() {
 
 			body, err := ioutil.ReadAll(res.Body)
 			Expect(err).ToNot(HaveOccurred())
-			Expect(string(body)).To(Equal(fmt.Sprintf(`"hello i am %s"`, APP_NAME)))
+			Expect(string(body)).To(Equal(fmt.Sprintf(`"hello i am %s running on http://localhost:%s/"`, APP_NAME, APP_PORT)))
 		})
 
 		It("correctly utilizes the USERPROFILE temp directory", func() {
@@ -148,7 +148,7 @@ var _ = Describe("HWC", func() {
 		It("runs on the specified port", func() {
 			session, err := startApp("asp-classic", APP_PORT, tmpDir)
 			Expect(err).ToNot(HaveOccurred())
-			Eventually(session).Should(Say("Server Started"))
+			Eventually(session, 10*time.Second).Should(Say("Server Started"))
 
 			url := fmt.Sprintf("http://localhost:%s", APP_PORT)
 			res, err := http.Get(url)
@@ -156,7 +156,7 @@ var _ = Describe("HWC", func() {
 
 			body, err := ioutil.ReadAll(res.Body)
 			Expect(err).ToNot(HaveOccurred())
-			Expect(string(body)).To(Equal(fmt.Sprintf(`"hello i am %s"`, APP_NAME)))
+			Expect(string(body)).To(Equal(fmt.Sprintf(`"hello i am %s running on http://localhost:%s/"`, APP_NAME, APP_PORT)))
 
 			sendCtrlBreak(session)
 			Eventually(session, 10*time.Second).Should(Say("Server Shutdown"))
