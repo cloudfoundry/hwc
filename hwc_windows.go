@@ -1,9 +1,11 @@
 package main
 
 import (
+	"crypto/rand"
 	"errors"
 	"flag"
 	"fmt"
+	"io"
 	"os"
 	"os/signal"
 	"path/filepath"
@@ -11,8 +13,6 @@ import (
 	"syscall"
 	"text/template"
 	"unsafe"
-
-	"github.com/docker/distribution/uuid"
 )
 
 var appRootPath string
@@ -61,8 +61,13 @@ func main() {
 	err = os.MkdirAll(tmpPath, 0700)
 	CheckErr(err)
 
+	uuid, err := GenerateUUID()
+	if err != nil {
+		Fail(fmt.Errorf("Generating UUID: %v", err))
+	}
+
 	app := App{
-		Instance:      uuid.Generate().String(),
+		Instance:      uuid,
 		Port:          port,
 		RootPath:      rootPath,
 		TempDirectory: tmpPath,
@@ -215,4 +220,16 @@ func CheckErr(err error) {
 func Fail(err error) {
 	fmt.Fprintf(os.Stderr, "\n%s\n", err)
 	os.Exit(1)
+}
+
+func GenerateUUID() (string, error) {
+	const size = 128 / 8
+	const format = "%08x-%04x-%04x-%04x-%012x"
+	var u [size]byte
+	if _, err := io.ReadFull(rand.Reader, u[0:]); err != nil {
+		return "", fmt.Errorf("error reading random number generator: %v", err)
+	}
+	u[6] = (u[6] & 0x0f) | 0x40
+	u[8] = (u[8] & 0x3f) | 0x80
+	return fmt.Sprintf(format, u[:4], u[4:6], u[6:8], u[8:10], u[10:]), nil
 }
