@@ -17,14 +17,12 @@ import (
 	. "github.com/onsi/gomega/gexec"
 )
 
-const APP_PORT = "43311"
-const APP_NAME = "nora"
-
 var _ = Describe("HWC", func() {
 	var (
 		err        error
 		binaryPath string
 		tmpDir     string
+		env        map[string]string
 	)
 
 	BeforeEach(func() {
@@ -32,6 +30,13 @@ var _ = Describe("HWC", func() {
 		Expect(err).ToNot(HaveOccurred())
 		tmpDir, err = ioutil.TempDir("", "")
 		Expect(err).ToNot(HaveOccurred())
+		env = map[string]string{
+			"USERPROFILE": tmpDir,
+			"PORT":        "43311",
+			"WINDIR":      os.Getenv("WINDIR"),
+			"SYSTEMROOT":  os.Getenv("SYSTEMROOT"),
+			"APP_NAME":    "nora",
+		}
 	})
 
 	AfterEach(func() {
@@ -48,15 +53,18 @@ var _ = Describe("HWC", func() {
 		Expect(r).ToNot(Equal(0), fmt.Sprintf("GenerateConsoleCtrlEvent: %v\n", err))
 	}
 
-	startApp := func(name, port, userProfile string) (*Session, error) {
+	startApp := func(env map[string]string) (*Session, error) {
 		cmd := exec.Command(binaryPath)
-		cmd.Env = append(os.Environ(), fmt.Sprintf("PORT=%s", port))
-		cmd.Env = append([]string{fmt.Sprintf("USERPROFILE=%s", userProfile)}, cmd.Env...)
+		vals := []string{}
+		for k, v := range env {
+			vals = append(vals, fmt.Sprintf("%s=%s", k, v))
+		}
+		cmd.Env = vals
 		wd, err := os.Getwd()
 		if err != nil {
 			return nil, err
 		}
-		cmd.Dir = filepath.Join(wd, "fixtures", APP_NAME)
+		cmd.Dir = filepath.Join(wd, "fixtures", env["APP_NAME"])
 		cmd.SysProcAttr = &syscall.SysProcAttr{
 			CreationFlags: syscall.CREATE_NEW_PROCESS_GROUP,
 		}
@@ -65,8 +73,12 @@ var _ = Describe("HWC", func() {
 	}
 
 	Context("when the app PORT is not set", func() {
+		JustBeforeEach(func() {
+			env["PORT"] = ""
+		})
+
 		It("errors", func() {
-			session, err := startApp(APP_NAME, "", tmpDir)
+			session, err := startApp(env)
 			Expect(err).ToNot(HaveOccurred())
 			Eventually(session, 10*time.Second).Should(Exit(1))
 			Eventually(session.Err).Should(Say("Missing PORT environment variable"))
@@ -74,11 +86,28 @@ var _ = Describe("HWC", func() {
 	})
 
 	Context("when the app USERPROFILE is not set", func() {
+		JustBeforeEach(func() {
+			env["USERPROFILE"] = ""
+		})
+
 		It("errors", func() {
-			session, err := startApp(APP_NAME, APP_PORT, "")
+			session, err := startApp(env)
 			Expect(err).ToNot(HaveOccurred())
 			Eventually(session, 10*time.Second).Should(Exit(1))
 			Eventually(session.Err).Should(Say("Missing USERPROFILE environment variable"))
+		})
+	})
+
+	Context("Given that I am missing a required .dll", func() {
+		JustBeforeEach(func() {
+			env["WINDIR"] = tmpDir
+		})
+
+		It("errors", func() {
+			session, err := startApp(env)
+			Expect(err).ToNot(HaveOccurred())
+			Eventually(session, 10*time.Second).Should(Exit(1))
+			Eventually(session.Err).Should(Say("Missing required DLLs:"))
 		})
 	})
 
@@ -89,7 +118,7 @@ var _ = Describe("HWC", func() {
 		)
 
 		BeforeEach(func() {
-			session, err = startApp("nora", APP_PORT, tmpDir)
+			session, err = startApp(env)
 			Expect(err).ToNot(HaveOccurred())
 			Eventually(session, 10*time.Second).Should(Say("Server Started"))
 		})
@@ -101,17 +130,17 @@ var _ = Describe("HWC", func() {
 		})
 
 		It("runs it on the specified port", func() {
-			url := fmt.Sprintf("http://localhost:%s", APP_PORT)
+			url := fmt.Sprintf("http://localhost:%s", env["PORT"])
 			res, err := http.Get(url)
 			Expect(err).ToNot(HaveOccurred())
 
 			body, err := ioutil.ReadAll(res.Body)
 			Expect(err).ToNot(HaveOccurred())
-			Expect(string(body)).To(Equal(fmt.Sprintf(`"hello i am %s running on http://localhost:%s/"`, APP_NAME, APP_PORT)))
+			Expect(string(body)).To(Equal(fmt.Sprintf(`"hello i am %s running on http://localhost:%s/"`, env["APP_NAME"], env["PORT"])))
 		})
 
 		It("correctly utilizes the USERPROFILE temp directory", func() {
-			url := fmt.Sprintf("http://localhost:%s", APP_PORT)
+			url := fmt.Sprintf("http://localhost:%s", env["PORT"])
 			_, err := http.Get(url)
 			Expect(err).ToNot(HaveOccurred())
 
@@ -129,7 +158,7 @@ var _ = Describe("HWC", func() {
 		})
 
 		It("does not add unexpected custom headers", func() {
-			url := fmt.Sprintf("http://localhost:%s", APP_PORT)
+			url := fmt.Sprintf("http://localhost:%s", env["PORT"])
 			res, err := http.Get(url)
 			Expect(err).ToNot(HaveOccurred())
 
@@ -145,22 +174,33 @@ var _ = Describe("HWC", func() {
 	})
 
 	Context("Given that I have an ASP.NET Classic application", func() {
-		It("runs on the specified port", func() {
-			session, err := startApp("asp-classic", APP_PORT, tmpDir)
+		var (
+			session *Session
+			err     error
+		)
+
+		BeforeEach(func() {
+			env["APP_NAME"] = "asp-classic"
+			session, err = startApp(env)
 			Expect(err).ToNot(HaveOccurred())
 			Eventually(session, 10*time.Second).Should(Say("Server Started"))
+		})
 
-			url := fmt.Sprintf("http://localhost:%s", APP_PORT)
+		AfterEach(func() {
+			sendCtrlBreak(session)
+			Eventually(session, 10*time.Second).Should(Say("Server Shutdown"))
+			Eventually(session).Should(Exit(0))
+		})
+
+		It("runs on the specified port", func() {
+
+			url := fmt.Sprintf("http://localhost:%s", env["PORT"])
 			res, err := http.Get(url)
 			Expect(err).ToNot(HaveOccurred())
 
 			body, err := ioutil.ReadAll(res.Body)
 			Expect(err).ToNot(HaveOccurred())
-			Expect(string(body)).To(Equal(fmt.Sprintf(`"hello i am %s running on http://localhost:%s/"`, APP_NAME, APP_PORT)))
-
-			sendCtrlBreak(session)
-			Eventually(session, 10*time.Second).Should(Say("Server Shutdown"))
-			Eventually(session).Should(Exit(0))
+			Expect(string(body)).To(Equal("Hello World!"))
 		})
 	})
 })

@@ -22,14 +22,16 @@ type webCore struct {
 	handle    syscall.Handle
 }
 
-type App struct {
-	Instance              string
-	Port                  int
-	RootPath              string
-	TempDirectory         string
-	ApplicationHostConfig string
-	AspnetConfig          string
-	WebConfig             string
+type HwcConfig struct {
+	Instance      string
+	Port          int
+	RootPath      string
+	TempDirectory string
+
+	AspnetConfigPath string
+	WebConfigPath    string
+
+	ApplicationHostConfigPath string
 }
 
 func init() {
@@ -39,54 +41,88 @@ func init() {
 func main() {
 	flag.Parse()
 
-	wc, err := newWebCore()
-	CheckErr(err)
-	defer syscall.FreeLibrary(wc.handle)
-
 	if os.Getenv("PORT") == "" {
-		Fail(errors.New("Missing PORT environment variable"))
+		checkErr(errors.New("Missing PORT environment variable"))
 	}
 	port, err := strconv.Atoi(os.Getenv("PORT"))
-	CheckErr(err)
+	checkErr(err)
 
 	rootPath, err := filepath.Abs(appRootPath)
-	CheckErr(err)
+	checkErr(err)
 
 	if os.Getenv("USERPROFILE") == "" {
-		Fail(errors.New("Missing USERPROFILE environment variable"))
+		checkErr(errors.New("Missing USERPROFILE environment variable"))
 	}
 	tmpPath, err := filepath.Abs(filepath.Join(os.Getenv("USERPROFILE"), "tmp"))
-	CheckErr(err)
+	checkErr(err)
 
 	err = os.MkdirAll(tmpPath, 0700)
-	CheckErr(err)
+	checkErr(err)
 
-	uuid, err := GenerateUUID()
+	uuid, err := generateUUID()
 	if err != nil {
-		Fail(fmt.Errorf("Generating UUID: %v", err))
+		checkErr(fmt.Errorf("Generating UUID: %v", err))
 	}
 
-	app := App{
+	err, config := NewHwcConfig(uuid, rootPath, tmpPath, port)
+	checkErr(err)
+
+	wc, err := newWebCore()
+	checkErr(err)
+	defer syscall.FreeLibrary(wc.handle)
+
+	checkErr(wc.activate(
+		config.ApplicationHostConfigPath,
+		config.WebConfigPath,
+		config.Instance))
+
+	c := make(chan os.Signal, 1)
+	signal.Notify(c, os.Interrupt)
+	<-c
+	checkErr(wc.shutdown(1, config.Instance))
+}
+
+func NewHwcConfig(uuid, rootPath, tmpPath string, port int) (error, *HwcConfig) {
+	config := &HwcConfig{
 		Instance:      uuid,
 		Port:          port,
 		RootPath:      rootPath,
 		TempDirectory: tmpPath,
 	}
-	CheckErr(app.configure())
+	dest := filepath.Join(config.TempDirectory, "config")
+	err := os.MkdirAll(dest, 0700)
+	if err != nil {
+		return err, nil
+	}
 
-	CheckErr(wc.activate(
-		app.ApplicationHostConfig,
-		app.WebConfig,
-		app.Instance))
+	config.ApplicationHostConfigPath = filepath.Join(dest, "ApplicationHost.config")
+	config.AspnetConfigPath = filepath.Join(dest, "Aspnet.config")
+	config.WebConfigPath = filepath.Join(dest, "Web.config")
 
-	c := make(chan os.Signal, 1)
-	signal.Notify(c, os.Interrupt)
-	<-c
-	CheckErr(wc.shutdown(1, app.Instance))
+	err, applicationHostConfig := NewApplicationHostConfig()
+	if err != nil {
+		return err, nil
+	}
+	err = applicationHostConfig.generate(*config)
+	if err != nil {
+		return err, nil
+	}
+
+	err = config.generateAspNetConfig()
+	if err != nil {
+		return err, nil
+	}
+
+	err = config.generateWebConfig()
+	if err != nil {
+		return err, nil
+	}
+
+	return nil, config
 }
 
 func newWebCore() (*webCore, error) {
-	hwebcore, err := syscall.LoadLibrary(os.ExpandEnv(`${windir}\\\system32\inetsrv\hwebcore.dll`))
+	hwebcore, err := syscall.LoadLibrary(os.ExpandEnv(`${windir}\system32\inetsrv\hwebcore.dll`))
 	if err != nil {
 		return nil, err
 	}
@@ -140,89 +176,42 @@ func (w *webCore) shutdown(immediate int, instanceName string) error {
 	return nil
 }
 
-func (a App) generateApplicationHostConfig() error {
-	file, err := os.Create(a.ApplicationHostConfig)
-	if err != nil {
-		return err
-	}
-	defer file.Close()
-
-	var tmpl = template.Must(template.New("applicationhost").Parse(ApplicationHostConfig))
-	if err := tmpl.Execute(file, a); err != nil {
-		return err
-	}
-	return nil
-}
-
-func (a App) generateAspNetConfig() error {
-	file, err := os.Create(a.AspnetConfig)
+func (hc *HwcConfig) generateAspNetConfig() error {
+	file, err := os.Create(hc.AspnetConfigPath)
 	if err != nil {
 		return err
 	}
 	defer file.Close()
 
 	var tmpl = template.Must(template.New("aspnet").Parse(AspnetConfig))
-	if err := tmpl.Execute(file, a); err != nil {
+	if err := tmpl.Execute(file, hc); err != nil {
 		return err
 	}
 	return nil
 }
 
-func (a App) generateWebConfig() error {
-	file, err := os.Create(a.WebConfig)
+func (hc *HwcConfig) generateWebConfig() error {
+	file, err := os.Create(hc.WebConfigPath)
 	if err != nil {
 		return err
 	}
 	defer file.Close()
 
 	var tmpl = template.Must(template.New("webconfig").Parse(WebConfig))
-	if err := tmpl.Execute(file, a); err != nil {
+	if err := tmpl.Execute(file, hc); err != nil {
 		return err
 	}
 	return nil
 }
 
-func (a *App) configure() error {
-	dest := filepath.Join(a.TempDirectory, "config")
-	err := os.MkdirAll(dest, 0700)
+func checkErr(err error) {
 	if err != nil {
-		return err
-	}
-
-	a.ApplicationHostConfig = filepath.Join(dest, "ApplicationHost.config")
-	a.AspnetConfig = filepath.Join(dest, "Aspnet.config")
-	a.WebConfig = filepath.Join(dest, "Web.config")
-
-	err = a.generateApplicationHostConfig()
-	if err != nil {
-		return err
-	}
-
-	err = a.generateAspNetConfig()
-	if err != nil {
-		return err
-	}
-
-	err = a.generateWebConfig()
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func CheckErr(err error) {
-	if err != nil {
-		Fail(err)
+		fmt.Fprintf(os.Stderr, "\n%s\n", err)
+		os.Exit(1)
 	}
 }
 
-func Fail(err error) {
-	fmt.Fprintf(os.Stderr, "\n%s\n", err)
-	os.Exit(1)
-}
-
-func GenerateUUID() (string, error) {
+func generateUUID() (string, error) {
 	const size = 128 / 8
 	const format = "%08x-%04x-%04x-%04x-%012x"
 	var u [size]byte
