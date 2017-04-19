@@ -1,4 +1,4 @@
-package main
+package hwcconfig
 
 import (
 	"errors"
@@ -8,101 +8,85 @@ import (
 	"text/template"
 )
 
-type GlobalModulesAdd struct {
-	Name         string
-	Image        string
-	PreCondition string
+var globalModules = []map[string]string{
+	{"Name": "UriCacheModule", "Image": `%windir%\System32\inetsrv\cachuri.dll`},
+	{"Name": "FileCacheModule", "Image": `%windir%\System32\inetsrv\cachfile.dll`},
+	{"Name": "TokenCacheModule", "Image": `%windir%\System32\inetsrv\cachtokn.dll`},
+	{"Name": "HttpCacheModule", "Image": `%windir%\System32\inetsrv\cachhttp.dll`},
+	{"Name": "StaticCompressionModule", "Image": `%windir%\System32\inetsrv\compstat.dll`},
+	{"Name": "DefaultDocumentModule", "Image": `%windir%\System32\inetsrv\defdoc.dll`},
+	{"Name": "DirectoryListingModule", "Image": `%windir%\System32\inetsrv\dirlist.dll`},
+	{"Name": "ProtocolSupportModule", "Image": `%windir%\System32\inetsrv\protsup.dll`},
+	{"Name": "StaticFileModule", "Image": `%windir%\System32\inetsrv\static.dll`},
+	{"Name": "AnonymousAuthenticationModule", "Image": `%windir%\System32\inetsrv\authanon.dll`},
+	{"Name": "RequestFilteringModule", "Image": `%windir%\System32\inetsrv\modrqflt.dll`},
+	{"Name": "CustomErrorModule", "Image": `%windir%\System32\inetsrv\custerr.dll`},
+	{"Name": "HttpLoggingModule", "Image": `%windir%\System32\inetsrv\loghttp.dll`},
+	{"Name": "RequestMonitorModule", "Image": `%windir%\System32\inetsrv\iisreqs.dll`},
+	{"Name": "IsapiModule", "Image": `%windir%\System32\inetsrv\isapi.dll`},
+	{"Name": "IsapiFilterModule", "Image": `%windir%\System32\inetsrv\filter.dll`},
+	{"Name": "ConfigurationValidationModule", "Image": `%windir%\System32\inetsrv\validcfg.dll`},
+	// {"Name": "ManagedEngine64", "Image": `%windir%\Microsoft.NET\Framework64\v2.0.50727\webengine.dll`, "PreCondition": "integratedMode,runtimeVersionv2.0,bitness64"},
+	// {"Name": "ManagedEngine", "Image": `%windir%\Microsoft.NET\Framework\v2.0.50727\webengine.dll`, "PreCondition": "integratedMode,runtimeVersionv2.0,bitness32"},
+	{"Name": "ManagedEngineV4.0_32bit", "Image": `%windir%\Microsoft.NET\Framework\v4.0.30319\webengine4.dll`, "PreCondition": "integratedMode,runtimeVersionv4.0,bitness32"},
+	{"Name": "ManagedEngineV4.0_64bit", "Image": `%windir%\Microsoft.NET\Framework64\v4.0.30319\webengine4.dll`, "PreCondition": "integratedMode,runtimeVersionv4.0,bitness64"},
+	{"Name": "CustomLoggingModule", "Image": `%windir%\System32\inetsrv\logcust.dll`},
+	{"Name": "TracingModule", "Image": `%windir%\System32\inetsrv\iisetw.dll`},
+	{"Name": "FailedRequestsTracingModule", "Image": `%windir%\System32\inetsrv\iisfreb.dll`},
+	{"Name": "WebSocketModule", "Image": `%windir%\System32\inetsrv\iiswsock.dll`},
+	{"Name": "DynamicCompressionModule", "Image": `%windir%\System32\inetsrv\compdyn.dll`},
+	{"Name": "HttpRedirectionModule", "Image": `%windir%\System32\inetsrv\redirect.dll`},
+	{"Name": "CertificateMappingAuthenticationModule", "Image": `%windir%\System32\inetsrv\authcert.dll`},
+	{"Name": "UrlAuthorizationModule", "Image": `%windir%\System32\inetsrv\urlauthz.dll`},
+	{"Name": "WindowsAuthenticationModule", "Image": `%windir%\System32\inetsrv\authsspi.dll`},
+	{"Name": "DigestAuthenticationModule", "Image": `%windir%\System32\inetsrv\authmd5.dll`},
+	{"Name": "IISCertificateMappingAuthenticationModule", "Image": `%windir%\System32\inetsrv\authmap.dll`},
+	{"Name": "IpRestrictionModule", "Image": `%windir%\System32\inetsrv\iprestr.dll`},
+	{"Name": "DynamicIpRestrictionModule", "Image": `%windir%\System32\inetsrv\diprestr.dll`},
 }
 
-type ApplicationHostConfig struct {
-	GlobalModules []GlobalModulesAdd
-}
-
-func NewApplicationHostConfig() (error, *ApplicationHostConfig) {
-	applicationHostConfig := &ApplicationHostConfig{
-		GlobalModules: []GlobalModulesAdd{
-			{Name: "UriCacheModule", Image: `${windir}\System32\inetsrv\cachuri.dll`},
-			{Name: "FileCacheModule", Image: `${windir}\System32\inetsrv\cachfile.dll`},
-			{Name: "TokenCacheModule", Image: `${windir}\System32\inetsrv\cachtokn.dll`},
-			{Name: "HttpCacheModule", Image: `${windir}\System32\inetsrv\cachhttp.dll`},
-			{Name: "StaticCompressionModule", Image: `${windir}\System32\inetsrv\compstat.dll`},
-			{Name: "DefaultDocumentModule", Image: `${windir}\System32\inetsrv\defdoc.dll`},
-			{Name: "DirectoryListingModule", Image: `${windir}\System32\inetsrv\dirlist.dll`},
-			{Name: "ProtocolSupportModule", Image: `${windir}\System32\inetsrv\protsup.dll`},
-			{Name: "StaticFileModule", Image: `${windir}\System32\inetsrv\static.dll`},
-			{Name: "AnonymousAuthenticationModule", Image: `${windir}\System32\inetsrv\authanon.dll`},
-			{Name: "RequestFilteringModule", Image: `${windir}\System32\inetsrv\modrqflt.dll`},
-			{Name: "CustomErrorModule", Image: `${windir}\System32\inetsrv\custerr.dll`},
-			{Name: "HttpLoggingModule", Image: `${windir}\System32\inetsrv\loghttp.dll`},
-			{Name: "RequestMonitorModule", Image: `${windir}\System32\inetsrv\iisreqs.dll`},
-			{Name: "IsapiModule", Image: `${windir}\System32\inetsrv\isapi.dll`},
-			{Name: "IsapiFilterModule", Image: `${windir}\System32\inetsrv\filter.dll`},
-			{Name: "ConfigurationValidationModule", Image: `${windir}\System32\inetsrv\validcfg.dll`},
-			// {Name: "ManagedEngine64", Image: `${windir}\Microsoft.NET\Framework64\v2.0.50727\webengine.dll`, PreCondition: "integratedMode,runtimeVersionv2.0,bitness64"},
-			// {Name: "ManagedEngine", Image: `${windir}\Microsoft.NET\Framework\v2.0.50727\webengine.dll`, PreCondition: "integratedMode,runtimeVersionv2.0,bitness32"},
-			{Name: "ManagedEngineV4.0_32bit", Image: `${windir}\Microsoft.NET\Framework\v4.0.30319\webengine4.dll`, PreCondition: "integratedMode,runtimeVersionv4.0,bitness32"},
-			{Name: "ManagedEngineV4.0_64bit", Image: `${windir}\Microsoft.NET\Framework64\v4.0.30319\webengine4.dll`, PreCondition: "integratedMode,runtimeVersionv4.0,bitness64"},
-			{Name: "CustomLoggingModule", Image: `${windir}\System32\inetsrv\logcust.dll`},
-			{Name: "TracingModule", Image: `${windir}\System32\inetsrv\iisetw.dll`},
-			{Name: "FailedRequestsTracingModule", Image: `${windir}\System32\inetsrv\iisfreb.dll`},
-			{Name: "WebSocketModule", Image: `${windir}\System32\inetsrv\iiswsock.dll`},
-			{Name: "DynamicCompressionModule", Image: `${windir}\System32\inetsrv\compdyn.dll`},
-			{Name: "HttpRedirectionModule", Image: `${windir}\System32\inetsrv\redirect.dll`},
-			{Name: "CertificateMappingAuthenticationModule", Image: `${windir}\System32\inetsrv\authcert.dll`},
-			{Name: "UrlAuthorizationModule", Image: `${windir}\System32\inetsrv\urlauthz.dll`},
-			{Name: "WindowsAuthenticationModule", Image: `${windir}\System32\inetsrv\authsspi.dll`},
-			{Name: "DigestAuthenticationModule", Image: `${windir}\System32\inetsrv\authmd5.dll`},
-			{Name: "IISCertificateMappingAuthenticationModule", Image: `${windir}\System32\inetsrv\authmap.dll`},
-			{Name: "IpRestrictionModule", Image: `${windir}\System32\inetsrv\iprestr.dll`},
-			{Name: "DynamicIpRestrictionModule", Image: `${windir}\System32\inetsrv\diprestr.dll`},
-		},
-	}
-
+func (c *HwcConfig) generateApplicationHostConfig() error {
 	missing := []string{}
-	for k, v := range applicationHostConfig.GlobalModules {
-		file := os.ExpandEnv(v.Image)
-		_, err := os.Stat(file)
+	for _, v := range globalModules {
+		imagePath := os.ExpandEnv(strings.Replace(v["Image"], `%windir%`, `${windir}`, -1))
+		_, err := os.Stat(imagePath)
 		if os.IsNotExist(err) {
-			missing = append(missing, file)
+			missing = append(missing, imagePath)
 		} else if err != nil {
-			return err, nil
+			return err
 		}
-		applicationHostConfig.GlobalModules[k].Image = file
 
 	}
 
 	if len(missing) > 0 {
-		return errors.New(fmt.Sprintf("Missing required DLLs:\n%s", strings.Join(missing, ",\n"))), nil
+		return errors.New(fmt.Sprintf("Missing required DLLs:\n%s", strings.Join(missing, ",\n")))
 	}
 
-	return nil, applicationHostConfig
-}
-
-func (a *ApplicationHostConfig) generate(app HwcConfig) error {
-	file, err := os.Create(app.ApplicationHostConfigPath)
+	file, err := os.Create(c.ApplicationHostConfigPath)
 	if err != nil {
 		return err
 	}
 	defer file.Close()
 
-	type input struct {
-		App                   HwcConfig
-		ApplicationHostConfig *ApplicationHostConfig
+	type templateInput struct {
+		Config        *HwcConfig
+		GlobalModules []map[string]string
 	}
 
-	i := input{
-		App: app,
-		ApplicationHostConfig: a,
+	t := templateInput{
+		Config:        c,
+		GlobalModules: globalModules,
 	}
 
-	var tmpl = template.Must(template.New("applicationhost").Parse(ApplicationHostConfigTemplate))
-	if err := tmpl.Execute(file, i); err != nil {
+	var tmpl = template.Must(template.New("applicationhost").Parse(applicationHostConfigTemplate))
+	if err := tmpl.Execute(file, t); err != nil {
 		return err
 	}
+
 	return nil
 }
 
-const ApplicationHostConfigTemplate = `<?xml version="1.0" encoding="UTF-8"?>
+const applicationHostConfigTemplate = `<?xml version="1.0" encoding="UTF-8"?>
 <configuration>
   <configSections>
     <sectionGroup name="system.applicationHost">
@@ -181,7 +165,7 @@ const ApplicationHostConfigTemplate = `<?xml version="1.0" encoding="UTF-8"?>
   <system.applicationHost>
 
     <applicationPools>
-		<add name="AppPool{{.App.Port}}" managedRuntimeVersion="v4.0" managedPipelineMode="Integrated" CLRConfigFile="{{.App.AspnetConfigPath}}" autoStart="true" startMode="AlwaysRunning" />
+		<add name="AppPool{{.Config.Port}}" managedRuntimeVersion="v4.0" managedPipelineMode="Integrated" CLRConfigFile="{{.Config.AspnetConfigPath}}" autoStart="true" startMode="AlwaysRunning" />
     </applicationPools>
 
     <listenerAdapters>
@@ -190,17 +174,17 @@ const ApplicationHostConfigTemplate = `<?xml version="1.0" encoding="UTF-8"?>
 
     <sites>
       <siteDefaults>
-        <logFile logFormat="W3C" directory="{{.App.TempDirectory}}\LogFiles" />
+        <logFile logFormat="W3C" directory="{{.Config.TempDirectory}}\LogFiles" />
         <traceFailedRequestsLogging enabled="false" />
       </siteDefaults>
-      <applicationDefaults applicationPool="AppPool{{.App.Port}}" />
+      <applicationDefaults applicationPool="AppPool{{.Config.Port}}" />
       <virtualDirectoryDefaults allowSubDirConfig="true" />
 			<site name="IronFoundrySite" id="1" serverAutoStart="true">
-        <application path="/" applicationPool="AppPool{{.App.Port}}">
-          <virtualDirectory path="/" physicalPath="{{.App.RootPath}}" />
+        <application path="/" applicationPool="AppPool{{.Config.Port}}">
+          <virtualDirectory path="/" physicalPath="{{.Config.RootPath}}" />
         </application>
         <bindings>
-          <binding protocol="http" bindingInformation="*:{{.App.Port}}:" />
+          <binding protocol="http" bindingInformation="*:{{.Config.Port}}:" />
         </bindings>
       </site>
 
@@ -235,12 +219,12 @@ const ApplicationHostConfigTemplate = `<?xml version="1.0" encoding="UTF-8"?>
     <fastCgi />
 
     <globalModules>
-			{{range .ApplicationHostConfig.GlobalModules}}
-			<add name="{{.Name}}" image="{{.Image}}" {{if .PreCondition}} preCondition="{{.PreCondition}}" {{end}} />
-			{{end}}
+      {{range .GlobalModules}}
+      <add name="{{ index . "Name" }}" image="{{ index . "Image" }}" {{ if index . "PreCondition" }} preCondition="{{ index . "PreCondition" }}" {{end}} />
+      {{end}}
     </globalModules>
 
-    <httpCompression directory="{{.App.TempDirectory}}\IIS Temporary Compressed Files">
+    <httpCompression directory="{{.Config.TempDirectory}}\IIS Temporary Compressed Files">
       <scheme name="gzip" dll="%Windir%\system32\inetsrv\gzip.dll" />
       <staticTypes>
         <add mimeType="text/*" enabled="true" />

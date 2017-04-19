@@ -1,17 +1,25 @@
-package main
+package hwcconfig
 
-const AspnetConfig = `<?xml version="1.0" encoding="UTF-8" ?>
-<configuration>
-  <runtime>
-    <legacyUnhandledExceptionPolicy enabled="false" />
-    <legacyImpersonationPolicy enabled="true"/>
-    <alwaysFlowImpersonationPolicy enabled="false"/>
-    <SymbolReadingPolicy enabled="1" />
-  </runtime>
-  <startup useLegacyV2RuntimeActivationPolicy="true" />
-</configuration>
-`
-const WebConfig = `<?xml version="1.0" encoding="utf-8"?>
+import (
+	"os"
+	"text/template"
+)
+
+func (c *HwcConfig) generateWebConfig() error {
+	file, err := os.Create(c.WebConfigPath)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+
+	var tmpl = template.Must(template.New("webconfig").Parse(webConfigTemplate))
+	if err := tmpl.Execute(file, c); err != nil {
+		return err
+	}
+	return nil
+}
+
+const webConfigTemplate = `<?xml version="1.0" encoding="UTF-8"?>
 <!-- the root web configuration file -->
 <configuration>
     <!--

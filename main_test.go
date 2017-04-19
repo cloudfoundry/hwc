@@ -1,3 +1,5 @@
+// +build windows
+
 package main_test
 
 import (
@@ -26,7 +28,7 @@ var _ = Describe("HWC", func() {
 	)
 
 	BeforeEach(func() {
-		binaryPath, err = Build("github.com/cloudfoundry-incubator/hwc")
+		binaryPath, err = Build("code.cloudfoundry.org/hwc")
 		Expect(err).ToNot(HaveOccurred())
 		tmpDir, err = ioutil.TempDir("", "")
 		Expect(err).ToNot(HaveOccurred())

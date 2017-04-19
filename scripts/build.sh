@@ -2,4 +2,5 @@
 
 set -ex
 
-GOOS=windows go build -o hwc-rel/hwc.exe github.com/cloudfoundry-incubator/hwc
+mkdir -p $PWD/hwc-rel
+GOOS=windows go build -o $PWD/hwc-rel/hwc.exe code.cloudfoundry.org/hwc
