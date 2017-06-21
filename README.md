@@ -11,10 +11,13 @@
   Install-WindowsFeature Web-WHC
   Install-WindowsFeature Web-Webserver
   Install-WindowsFeature Web-WebSockets
-  Install-WindowsFeature AS-Web-Support
-  Install-WindowsFeature AS-NET-Framework
   Install-WindowsFeature Web-WHC
   Install-WindowsFeature Web-ASP
+  Install-WindowsFeature Web-ASP-Net45
+
+  # Not needed when running in Windows 2016
+  Install-WindowsFeature AS-Web-Support
+  Install-WindowsFeature AS-NET-Framework
   ```
 
 ### Building
