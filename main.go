@@ -11,7 +11,6 @@ import (
 	"os"
 	"os/signal"
 	"path/filepath"
-	_ "runtime/cgo"
 	"strconv"
 	"syscall"
 
