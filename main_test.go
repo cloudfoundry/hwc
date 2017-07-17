@@ -175,6 +175,33 @@ var _ = Describe("HWC", func() {
 		})
 	})
 
+	FContext("The app has an redirect loop", func() {
+		var (
+			session *Session
+			err     error
+		)
+
+		BeforeEach(func() {
+			env["APP_NAME"] = "stack-overflow"
+			session, err = startApp(env)
+			Expect(err).ToNot(HaveOccurred())
+			Eventually(session, 10*time.Second).Should(Say("Server Started"))
+		})
+
+		AfterEach(func() {
+			sendCtrlBreak(session)
+			Eventually(session, 10*time.Second).Should(Say("Server Shutdown"))
+			Eventually(session).Should(Exit(0))
+		})
+
+		It("does not get a stack overflow error", func() {
+			url := fmt.Sprintf("http://localhost:%s", env["PORT"])
+			_, err := http.Get(url)
+			Expect(string(session.Err.Contents())).NotTo(ContainSubstring("Process is terminated due to StackOverflowException"))
+			Expect(err).ToNot(HaveOccurred())
+		})
+	})
+
 	Context("Given that I have an ASP.NET Classic application", func() {
 		var (
 			session *Session
@@ -195,7 +222,6 @@ var _ = Describe("HWC", func() {
 		})
 
 		It("runs on the specified port", func() {
-
 			url := fmt.Sprintf("http://localhost:%s", env["PORT"])
 			res, err := http.Get(url)
 			Expect(err).ToNot(HaveOccurred())
