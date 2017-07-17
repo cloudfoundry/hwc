@@ -28,7 +28,7 @@ var _ = Describe("HWC", func() {
 	)
 
 	BeforeEach(func() {
-		binaryPath, err = Build("code.cloudfoundry.org/hwc")
+		binaryPath, err = BuildWithEnvironment("code.cloudfoundry.org/hwc", []string{"CGO_ENABLED=1", "GO_EXTLINK_ENABLED=1"})
 		Expect(err).ToNot(HaveOccurred())
 		tmpDir, err = ioutil.TempDir("", "")
 		Expect(err).ToNot(HaveOccurred())
@@ -135,6 +135,7 @@ var _ = Describe("HWC", func() {
 			url := fmt.Sprintf("http://localhost:%s", env["PORT"])
 			res, err := http.Get(url)
 			Expect(err).ToNot(HaveOccurred())
+			Expect(res.StatusCode).To(Equal(200))
 
 			body, err := ioutil.ReadAll(res.Body)
 			Expect(err).ToNot(HaveOccurred())
@@ -143,19 +144,17 @@ var _ = Describe("HWC", func() {
 
 		It("correctly utilizes the USERPROFILE temp directory", func() {
 			url := fmt.Sprintf("http://localhost:%s", env["PORT"])
-			_, err := http.Get(url)
+			res, err := http.Get(url)
 			Expect(err).ToNot(HaveOccurred())
+			Expect(res.StatusCode).To(Equal(200))
 
-			_, err = os.Stat(filepath.Join(tmpDir, "tmp", "root"))
+			Expect(filepath.Join(tmpDir, "tmp", "root")).To(BeADirectory())
 			Expect(err).ToNot(HaveOccurred())
 
 			By("placing config files in the temp directory", func() {
-				_, err = os.Stat(filepath.Join(tmpDir, "tmp", "config", "Web.config"))
-				Expect(err).ToNot(HaveOccurred())
-				_, err = os.Stat(filepath.Join(tmpDir, "tmp", "config", "ApplicationHost.config"))
-				Expect(err).ToNot(HaveOccurred())
-				_, err = os.Stat(filepath.Join(tmpDir, "tmp", "config", "Aspnet.config"))
-				Expect(err).ToNot(HaveOccurred())
+				Expect(filepath.Join(tmpDir, "tmp", "config", "Web.config")).To(BeAnExistingFile())
+				Expect(filepath.Join(tmpDir, "tmp", "config", "ApplicationHost.config")).To(BeAnExistingFile())
+				Expect(filepath.Join(tmpDir, "tmp", "config", "Aspnet.config")).To(BeAnExistingFile())
 			})
 		})
 
@@ -163,6 +162,7 @@ var _ = Describe("HWC", func() {
 			url := fmt.Sprintf("http://localhost:%s", env["PORT"])
 			res, err := http.Get(url)
 			Expect(err).ToNot(HaveOccurred())
+			Expect(res.StatusCode).To(Equal(200))
 
 			var customHeaders []string
 			for h, _ := range res.Header {
@@ -199,6 +199,7 @@ var _ = Describe("HWC", func() {
 			url := fmt.Sprintf("http://localhost:%s", env["PORT"])
 			res, err := http.Get(url)
 			Expect(err).ToNot(HaveOccurred())
+			Expect(res.StatusCode).To(Equal(200))
 
 			body, err := ioutil.ReadAll(res.Body)
 			Expect(err).ToNot(HaveOccurred())
