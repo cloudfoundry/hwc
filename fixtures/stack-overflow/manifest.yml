@@ -1,0 +1,7 @@
+---
+applications:
+- name: wingtiptoys
+  memory: 2G
+  stack: windows2012R2
+  buildpack: hwc_buildpack
+
