@@ -10,9 +10,9 @@
 ## Compiling on Windows 
 
 1. Install Golang from the [golang downloads page](https://golang.org/dl/).
-2. Install MinGW-w64 using the [mingw-w64-install.exe](https://sourceforge.net/projects/mingw-w64/files/Toolchains%20targetting%20Win32/Personal%20Builds/mingw-builds/installer/).
+2. Install MinGW-w64 using the [mingw-w64-install.exe](https://sourceforge.net/projects/mingw-w64/files/Toolchains%20targetting%20Win32/Personal%20Builds/mingw-builds/installer/). Select the `x86_64` Architecture.
 3. Ensure you've set the GOPATH environment variable.
-4. Ensure you've added the `x86_64-w64-mingw32-gcc` compiler to your Windows PATH.
+4. Ensure you've added the `x86_64-w64-mingw32-gcc` compiler to your Windows PATH. It will be installed to a directory similar to: `C:\Program Files\mingw-w64\x86_64-7.2.0-posix-seh-rt_v5-rev1\mingw64\bin`
 
 ```PowerShell
 git clone --recursive git@github.com:cloudfoundry-incubator/hwc "$env:GOPATH/src/code.cloudfoundry.org/hwc"

@@ -175,6 +175,41 @@ var _ = Describe("HWC", func() {
 		})
 	})
 
+	Context("Given that I have an ASP.NET MVC application (nora) with an application path", func() {
+		var (
+			session *Session
+			err     error
+		)
+
+		const contextPath = "/vdir1/vdir2"
+
+		BeforeEach(func() {
+			env["VCAP_APPLICATION"] = fmt.Sprintf("{ \"application_uris\": [\"localhost:%s%s\"] }", env["PORT"], contextPath)
+			env["VCAP_SERVICES"] = "{}"
+			session, err = startApp(env)
+			Expect(err).ToNot(HaveOccurred())
+			Eventually(session, 10*time.Second).Should(Say("Server Started"))
+		})
+
+		AfterEach(func() {
+			sendCtrlBreak(session)
+			Eventually(session, 10*time.Second).Should(Say("Server Shutdown"))
+			Eventually(session).Should(Exit(0))
+		})
+
+		It("runs it on the specified port and path", func() {
+			url := fmt.Sprintf("http://localhost:%s%s", env["PORT"], contextPath)
+			res, err := http.Get(url)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(res.StatusCode).To(Equal(200))
+
+			body, err := ioutil.ReadAll(res.Body)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(string(body)).To(Equal(fmt.Sprintf(`"hello i am %s running on http://localhost:%s%s"`,
+				env["APP_NAME"], env["PORT"], contextPath)))
+		})
+	})
+
 	Context("The app has an infinite redirect loop", func() {
 		var (
 			session *Session

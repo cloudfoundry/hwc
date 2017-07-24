@@ -15,6 +15,9 @@ import (
 	"strconv"
 	"syscall"
 
+	cfenv "github.com/cloudfoundry-community/go-cfenv"
+
+	"code.cloudfoundry.org/hwc/contextpath"
 	"code.cloudfoundry.org/hwc/hwcconfig"
 	"code.cloudfoundry.org/hwc/webcore"
 )
@@ -46,12 +49,27 @@ func main() {
 	err = os.MkdirAll(tmpPath, 0700)
 	checkErr(err)
 
+	contextPath := contextpath.Default()
+	if cfenv.IsRunningOnCF() {
+		appEnv, err := cfenv.Current()
+		if err != nil {
+			checkErr(fmt.Errorf("Getting current CF environment: %v", err))
+		}
+
+		contextPath, err = contextpath.New(appEnv)
+		if err != nil {
+			checkErr(fmt.Errorf("Getting CF application context path: %v", err))
+		}
+
+		fmt.Println(fmt.Sprintf("Context Path %s", contextPath))
+	}
+
 	uuid, err := generateUUID()
 	if err != nil {
 		checkErr(fmt.Errorf("Generating UUID: %v", err))
 	}
 
-	err, config := hwcconfig.New(port, rootPath, tmpPath, uuid)
+	err, config := hwcconfig.New(port, rootPath, tmpPath, contextPath, uuid)
 	checkErr(err)
 
 	err, wc := webcore.New()

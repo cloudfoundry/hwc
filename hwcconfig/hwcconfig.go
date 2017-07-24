@@ -8,31 +8,37 @@ import (
 type HwcConfig struct {
 	Instance      string
 	Port          int
-	RootPath      string
 	TempDirectory string
 
+	Applications              []*HwcApplication
 	AspnetConfigPath          string
 	WebConfigPath             string
 	ApplicationHostConfigPath string
 }
 
-func New(port int, rootPath, tmpPath, uuid string) (error, *HwcConfig) {
+func New(port int, rootPath, tmpPath, contextPath, uuid string) (error, *HwcConfig) {
 	config := &HwcConfig{
 		Instance:      uuid,
 		Port:          port,
-		RootPath:      rootPath,
 		TempDirectory: tmpPath,
 	}
 
-	dest := filepath.Join(config.TempDirectory, "config")
-	err := os.MkdirAll(dest, 0700)
+	defaultRootPath := filepath.Join(tmpPath, "wwwroot")
+	err := os.MkdirAll(defaultRootPath, 0700)
 	if err != nil {
 		return err, nil
 	}
 
-	config.ApplicationHostConfigPath = filepath.Join(dest, "ApplicationHost.config")
-	config.AspnetConfigPath = filepath.Join(dest, "Aspnet.config")
-	config.WebConfigPath = filepath.Join(dest, "Web.config")
+	configPath := filepath.Join(config.TempDirectory, "config")
+	err = os.MkdirAll(configPath, 0700)
+	if err != nil {
+		return err, nil
+	}
+
+	config.Applications = NewHwcApplications(defaultRootPath, rootPath, contextPath)
+	config.ApplicationHostConfigPath = filepath.Join(configPath, "ApplicationHost.config")
+	config.AspnetConfigPath = filepath.Join(configPath, "Aspnet.config")
+	config.WebConfigPath = filepath.Join(configPath, "Web.config")
 
 	err = config.generateApplicationHostConfig()
 	if err != nil {

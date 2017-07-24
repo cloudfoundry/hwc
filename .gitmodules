@@ -10,3 +10,10 @@
 	path = vendor/gopkg.in/yaml.v2
 	url = https://gopkg.in/yaml.v2
 	branch = v2
+[submodule "vendor/github.com/cloudfoundry-community/go-cfenv"]
+	path = vendor/github.com/cloudfoundry-community/go-cfenv
+	url = https://github.com/cloudfoundry-community/go-cfenv.git
+	branch = master
+[submodule "vendor/github.com/mitchellh/mapstructure"]
+	path = vendor/github.com/mitchellh/mapstructure
+	url = https://github.com/mitchellh/mapstructure.git
