@@ -15,7 +15,7 @@
 4. Ensure you've added the `x86_64-w64-mingw32-gcc` compiler to your Windows PATH.
 
 ```PowerShell
-git clone git@github.com:cloudfoundry-incubator/hwc "$env:GOPATH/src/code.cloudfoundry.org/hwc"
+git clone --recursive git@github.com:cloudfoundry-incubator/hwc "$env:GOPATH/src/code.cloudfoundry.org/hwc"
 cd "$env:GOPATH/src/code.cloudfoundry.org/hwc"
 .\scripts\build.ps1
 ```
@@ -27,7 +27,7 @@ cd "$env:GOPATH/src/code.cloudfoundry.org/hwc"
 3. Ensure you've set the GOPATH environment variable.
 
 ```
-git clone git@github.com:cloudfoundry-incubator/hwc $GOPATH/src/code.cloudfoundry.org/hwc
+git clone --recursive git@github.com:cloudfoundry-incubator/hwc $GOPATH/src/code.cloudfoundry.org/hwc
 cd $GOPATH/src/code.cloudfoundry.org/hwc
 ./scripts/build.sh
 ```
@@ -39,7 +39,7 @@ cd $GOPATH/src/code.cloudfoundry.org/hwc
 3. Ensure you've set the GOPATH environment variable.
 
 ```
-git clone git@github.com:cloudfoundry-incubator/hwc $GOPATH/src/code.cloudfoundry.org/hwc
+git clone --recursive git@github.com:cloudfoundry-incubator/hwc $GOPATH/src/code.cloudfoundry.org/hwc
 cd $GOPATH/src/code.cloudfoundry.org/hwc
 ./scripts/build.sh
 ```
@@ -60,10 +60,9 @@ Install-WindowsFeature AS-Web-Support
 Install-WindowsFeature AS-NET-Framework
 ```
 
-Install ginkgo and gomega:
+Install ginkgo:
 ```
 go get github.com/onsi/ginkgo/ginkgo
-go get github.com/onsi/gomega
 ```
 
 Execute the tests:
