@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"path/filepath"
 	"strings"
 	"text/template"
 )
@@ -62,6 +63,16 @@ func (c *HwcConfig) generateApplicationHostConfig() error {
 		return errors.New(fmt.Sprintf("Missing required DLLs:\n%s", strings.Join(missing, ",\n")))
 	}
 
+	rewrite := false
+	rewritePath := filepath.Join(os.Getenv("WINDIR"), "system32", "inetsrv", "rewrite.dll")
+	_, err := os.Stat(rewritePath)
+	if err == nil {
+		globalModules = append(globalModules, map[string]string{"Name": "RewriteModule", "Image": `%windir%\system32\inetsrv\rewrite.dll`})
+		rewrite = true
+	} else if !os.IsNotExist(err) {
+		return err
+	}
+
 	file, err := os.Create(c.ApplicationHostConfigPath)
 	if err != nil {
 		return err
@@ -71,11 +82,13 @@ func (c *HwcConfig) generateApplicationHostConfig() error {
 	type templateInput struct {
 		Config        *HwcConfig
 		GlobalModules []map[string]string
+		Rewrite       bool
 	}
 
 	t := templateInput{
 		Config:        c,
 		GlobalModules: globalModules,
+		Rewrite:       rewrite,
 	}
 
 	var tmpl = template.Must(template.New("applicationhost").Parse(applicationHostConfigTemplate))
@@ -151,14 +164,24 @@ const applicationHostConfigTemplate = `<?xml version="1.0" encoding="UTF-8"?>
         <section name="backup" overrideModeDefault="Deny" allowDefinition="MachineToApplication" />
       </sectionGroup>
       <section name="webSocket" overrideModeDefault="Deny" />
+			{{if .Rewrite}}
+			<sectionGroup name="rewrite">
+				<section name="rules" overrideModeDefault="Allow" />
+				<section name="globalRules" overrideModeDefault="Deny" allowDefinition="AppHostOnly" />
+				<section name="outboundRules" overrideModeDefault="Allow" />
+				<section name="providers" overrideModeDefault="Allow" />
+				<section name="rewriteMaps" overrideModeDefault="Allow" />
+				<section name="allowedServerVariables" overrideModeDefault="Deny" />
+			</sectionGroup>
+			{{end}}
     </sectionGroup>
   </configSections>
 
   <configProtectedData defaultProvider="RsaProtectedConfigurationProvider">
     <providers>
       <add name="IISWASOnlyRsaProvider" type="" description="Uses RsaCryptoServiceProvider to encrypt and decrypt" keyContainerName="iisWasKey" cspProviderName="" useMachineContainer="true" useOAEP="false" />
-      <add name="AesProvider" type="Microsoft.ApplicationHost.AesProtectedConfigurationProvider" description="Uses an AES session key to encrypt and decrypt" keyContainerName="iisConfigurationKey" cspProviderName="" useOAEP="false" useMachineContainer="true" sessionKey="AQIAAA5mAAAApAAAS6Z5YP0OSlsiaa0bcRsU29hZheG5neHzP77phcrjyRCVV1aHijkfYNx/9nGWIDdnoDgx/cfFb1w/lKNKHCFWQpUX0+UsJV29EQfvCAYJ5FKWvnKBXr5tOeBX6mZyemD2OOHYmjuke8Xhm/lO9jAqE1/lm4/34p+zQj3L2d6h32Y=" />
-      <add name="IISWASOnlyAesProvider" type="Microsoft.ApplicationHost.AesProtectedConfigurationProvider" description="Uses an AES session key to encrypt and decrypt" keyContainerName="iisWasKey" cspProviderName="" useOAEP="false" useMachineContainer="true" sessionKey="AQIAAA5mAAAApAAA5FrKYkkxSDM1ipKUTmcr3tpTC7VM4WidghCoPUDzSYnwk+74oFjWCHl+3LpwwnoRgiEU9w5nHxy4UY6TSIoK2YrH/WYb7JQ65pZsu16Z98ISjGRSlr7rhqSc9tHOvjbGjNklNFBX9chp//ahKJaa4raYFR7DOjDc1RASwvh9HbA=" />
+			<add name="AesProvider" type="Microsoft.ApplicationHost.AesProtectedConfigurationProvider" description="Uses an AES session key to encrypt and decrypt" keyContainerName="iisConfigurationKey" cspProviderName="" useOAEP="false" useMachineContainer="true" sessionKey="AQIAAA5mAAAApAAAwSFIHr+CFaL6lFIXiDElWPZcCsvw+aCfCpnar0hhwKBK5O6kkvIDR5FmSmcvq0R7VeZcfdZNsdPTqTNZeogjDB3nSQDmT4cljnwTPOjJw5wDGjLYI/5uJZZKKGKc+Ulef+Po/fcbW4bRwsLMBFMZnFaMDuC5l7aub55gs43HPnE+qunqZGqcFrlxbfKorNYs7yEPkFFEHVN9nGhcLwapYrYcZgqhYpM+dLl354aOdvr7IpPHE8x0YuXtnHSCQfju4tdSILiz3IjruAxKfzG2CtSMSsEe62PMtfFjYdG9cr8NN02FZWM36ijwsKXrJjVOGymJlazNyd6ix+fRwJO9fQ==" />
+			<add name="IISWASOnlyAesProvider" type="Microsoft.ApplicationHost.AesProtectedConfigurationProvider" description="Uses an AES session key to encrypt and decrypt" keyContainerName="iisWasKey" cspProviderName="" useOAEP="false" useMachineContainer="true" sessionKey="AQIAAA5mAAAApAAAE00l2KmNeUb8ogNcH1vnryHXDlk1fnnkkohfYdxEt9cQkgNtin+f1fFVTm4/Oy4dHQ1dMTStAXqbBNx6bB1D/njynxH86kSzmjgDnvriEVYpTvGiCUqXAzBDJx2Dx+qHYNAiAzCBWdZ3YHJHFFH0BK6zQ7tLmhpjLJohKF1iWLDnqTfJLVRj12zMvQ8vorKHm/WraThJZlHORZYwhQ58wY47gWome4exwsL7iq1VKOTO4SCChZJQl+OZVTYUGHvkefJoYWLPURoKLoCVC7NJLC+Cu/R5yYv7XBOV3JZ3L4PhridW9UkrBW1E9NzCpJtCdE+720OttfRv42Z492fJTA==" />
     </providers>
   </configProtectedData>
 
@@ -874,6 +897,9 @@ const applicationHostConfigTemplate = `<?xml version="1.0" encoding="UTF-8"?>
       <add name="DigestAuthenticationModule" lockItem="true" />
       <add name="IISCertificateMappingAuthenticationModule" lockItem="true" />
       <add name="IpRestrictionModule" lockItem="true" />
+			{{if .Rewrite}}
+			<add name="RewriteModule" />
+			{{end}}
     </modules>
 
     <handlers accessPolicy="Read, Script">
