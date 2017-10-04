@@ -48,16 +48,10 @@ cd $GOPATH/src/code.cloudfoundry.org/hwc
 
 Install Windows/.NET Features from Powershell by running:
 ```
-Install-WindowsFeature Web-WHC
-Install-WindowsFeature Web-Webserver
-Install-WindowsFeature Web-WebSockets
-Install-WindowsFeature Web-WHC
-Install-WindowsFeature Web-ASP
-Install-WindowsFeature Web-ASP-Net45
-
-# Not needed when running in Windows 2016
-Install-WindowsFeature AS-Web-Support
-Install-WindowsFeature AS-NET-Framework
+Enable-WindowsOptionalFeature -Online -All -FeatureName IIS-WebServer
+Enable-WindowsOptionalFeature -Online -All -FeatureName IIS-WebSockets
+Enable-WindowsOptionalFeature -Online -All -FeatureName IIS-HostableWebCore
+Enable-WindowsOptionalFeature -Online -All -FeatureName IIS-ASPNET45
 ```
 
 Install ginkgo:
