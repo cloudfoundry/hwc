@@ -3,12 +3,16 @@
 package main_test
 
 import (
+	"errors"
 	"fmt"
+	"io"
 	"io/ioutil"
+	"math/rand"
 	"net/http"
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"syscall"
 	"time"
@@ -62,11 +66,7 @@ var _ = Describe("HWC", func() {
 			vals = append(vals, fmt.Sprintf("%s=%s", k, v))
 		}
 		cmd.Env = vals
-		wd, err := os.Getwd()
-		if err != nil {
-			return nil, err
-		}
-		cmd.Dir = filepath.Join(wd, "fixtures", env["APP_NAME"])
+		cmd.Dir = env["APP_DIR"]
 		cmd.SysProcAttr = &syscall.SysProcAttr{
 			CreationFlags: syscall.CREATE_NEW_PROCESS_GROUP,
 		}
@@ -210,6 +210,96 @@ var _ = Describe("HWC", func() {
 		})
 	})
 
+	Context("when multiple apps are started by different hwc processes", func() {
+		var (
+			app1        *Session
+			app1Port    string
+			app1Profile string
+			app1Dir     string
+
+			app2        *Session
+			app2Port    string
+			app2Profile string
+			app2Dir     string
+		)
+
+		BeforeEach(func() {
+			var err error
+			wd, err := os.Getwd()
+			Expect(err).ToNot(HaveOccurred())
+
+			app1Port = newRandomPortStr()
+			env["PORT"] = app1Port
+
+			app1Profile, err = ioutil.TempDir("", "")
+			Expect(err).ToNot(HaveOccurred())
+			env["USERPROFILE"] = app1Profile
+
+			app1Dir, err = ioutil.TempDir("", "")
+			Expect(err).ToNot(HaveOccurred())
+			env["APP_DIR"] = app1Dir
+			Expect(copyDirectory(filepath.Join(wd, "fixtures", "nora"), app1Dir)).To(Succeed())
+
+			app1, err = startApp(env)
+			Expect(err).ToNot(HaveOccurred())
+			Eventually(app1, 10*time.Second).Should(Say("Server Started"))
+
+			app2Port = newRandomPortStr()
+			env["PORT"] = app2Port
+
+			app2Profile, err = ioutil.TempDir("", "")
+			Expect(err).ToNot(HaveOccurred())
+			env["USERPROFILE"] = app2Profile
+
+			app2Dir, err = ioutil.TempDir("", "")
+			Expect(err).ToNot(HaveOccurred())
+			env["APP_DIR"] = app2Dir
+			Expect(copyDirectory(filepath.Join(wd, "fixtures", "nora"), app2Dir)).To(Succeed())
+
+			app2, err = startApp(env)
+			Expect(err).ToNot(HaveOccurred())
+			Eventually(app2, 10*time.Second).Should(Say("Server Started"))
+		})
+
+		AfterEach(func() {
+			sendCtrlBreak(app1)
+			Eventually(app1, 10*time.Second).Should(Say("Server Shutdown"))
+			Eventually(app1).Should(Exit(0))
+			Expect(os.RemoveAll(app1Profile)).To(Succeed())
+			Expect(os.RemoveAll(app1Dir)).To(Succeed())
+
+			sendCtrlBreak(app2)
+			Eventually(app2, 10*time.Second).Should(Say("Server Shutdown"))
+			Eventually(app2).Should(Exit(0))
+			Expect(os.RemoveAll(app2Profile)).To(Succeed())
+			Expect(os.RemoveAll(app2Dir)).To(Succeed())
+		})
+
+		FIt("the site name and id should be unique for each app", func() {
+			url := fmt.Sprintf("http://localhost:%s/sitename", app1Port)
+			res, err := http.Get(url)
+			Expect(err).ToNot(HaveOccurred())
+			body, err := ioutil.ReadAll(res.Body)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(res.StatusCode).To(Equal(200), string(body))
+
+			// body, err := ioutil.ReadAll(res.Body)
+			// Expect(err).ToNot(HaveOccurred())
+			app1DomainAppId := string(body)
+
+			url = fmt.Sprintf("http://localhost:%s/sitename", app2Port)
+			res, err = http.Get(url)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(res.StatusCode).To(Equal(200))
+
+			body, err = ioutil.ReadAll(res.Body)
+			Expect(err).ToNot(HaveOccurred())
+			app2DomainAppId := string(body)
+
+			Expect(app1DomainAppId).NotTo(Equal(app2DomainAppId))
+		})
+	})
+
 	Context("The app has an infinite redirect loop", func() {
 		var (
 			session *Session
@@ -269,3 +359,84 @@ var _ = Describe("HWC", func() {
 		})
 	})
 })
+
+func newRandomPortStr() string {
+	const maxPort = 60000
+	const minPort = 1025
+	port := rand.Int63n(maxPort-minPort) + minPort
+	return strconv.FormatInt(port, 10)
+}
+
+func copyDirectory(srcDir, destDir string) error {
+	destExists, _ := fileExists(destDir)
+	if !destExists {
+		return errors.New("destination dir must exist")
+	}
+
+	files, err := ioutil.ReadDir(srcDir)
+	if err != nil {
+		return err
+	}
+
+	for _, f := range files {
+		src := filepath.Join(srcDir, f.Name())
+		dest := filepath.Join(destDir, f.Name())
+
+		if f.IsDir() {
+			err = os.MkdirAll(dest, f.Mode())
+			if err != nil {
+				return err
+			}
+			if err := copyDirectory(src, dest); err != nil {
+				return err
+			}
+		} else {
+			rc, err := os.Open(src)
+			if err != nil {
+				return err
+			}
+
+			err = writeToFile(rc, dest, f.Mode())
+			if err != nil {
+				rc.Close()
+				return err
+			}
+			rc.Close()
+		}
+	}
+
+	return nil
+}
+
+func fileExists(file string) (bool, error) {
+	_, err := os.Stat(file)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return false, nil
+		}
+
+		return false, err
+	}
+
+	return true, nil
+}
+
+func writeToFile(source io.Reader, destFile string, mode os.FileMode) error {
+	err := os.MkdirAll(filepath.Dir(destFile), 0755)
+	if err != nil {
+		return err
+	}
+
+	fh, err := os.OpenFile(destFile, os.O_RDWR|os.O_CREATE|os.O_TRUNC, mode)
+	if err != nil {
+		return err
+	}
+	defer fh.Close()
+
+	_, err = io.Copy(fh, source)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
