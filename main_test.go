@@ -211,92 +211,68 @@ var _ = Describe("HWC", func() {
 	})
 
 	Context("when multiple apps are started by different hwc processes", func() {
-		var (
-			app1        *Session
-			app1Port    string
-			app1Profile string
-			app1Dir     string
-
-			app2        *Session
-			app2Port    string
-			app2Profile string
-			app2Dir     string
-		)
+		const appCount = 2
+		type app struct {
+			Session *Session
+			Port    string
+			Profile string
+			Dir     string
+		}
+		var apps []app
 
 		BeforeEach(func() {
 			var err error
 			wd, err := os.Getwd()
 			Expect(err).ToNot(HaveOccurred())
 
-			app1Port = newRandomPortStr()
-			env["PORT"] = app1Port
+			for i := 0; i < appCount; i++ {
+				port := newRandomPortStr()
+				env["PORT"] = port
 
-			app1Profile, err = ioutil.TempDir("", "")
-			Expect(err).ToNot(HaveOccurred())
-			env["USERPROFILE"] = app1Profile
+				profile, err := ioutil.TempDir("", "")
+				Expect(err).ToNot(HaveOccurred())
+				env["USERPROFILE"] = profile
 
-			app1Dir, err = ioutil.TempDir("", "")
-			Expect(err).ToNot(HaveOccurred())
-			env["APP_DIR"] = app1Dir
-			Expect(copyDirectory(filepath.Join(wd, "fixtures", "nora"), app1Dir)).To(Succeed())
+				dir, err := ioutil.TempDir("", "")
+				Expect(err).ToNot(HaveOccurred())
+				env["APP_DIR"] = dir
+				Expect(copyDirectory(filepath.Join(wd, "fixtures", "nora"), dir)).To(Succeed())
 
-			app1, err = startApp(env)
-			Expect(err).ToNot(HaveOccurred())
-			Eventually(app1, 10*time.Second).Should(Say("Server Started"))
+				session, err := startApp(env)
+				Expect(err).ToNot(HaveOccurred())
+				Eventually(session, 10*time.Second).Should(Say("Server Started"))
 
-			app2Port = newRandomPortStr()
-			env["PORT"] = app2Port
-
-			app2Profile, err = ioutil.TempDir("", "")
-			Expect(err).ToNot(HaveOccurred())
-			env["USERPROFILE"] = app2Profile
-
-			app2Dir, err = ioutil.TempDir("", "")
-			Expect(err).ToNot(HaveOccurred())
-			env["APP_DIR"] = app2Dir
-			Expect(copyDirectory(filepath.Join(wd, "fixtures", "nora"), app2Dir)).To(Succeed())
-
-			app2, err = startApp(env)
-			Expect(err).ToNot(HaveOccurred())
-			Eventually(app2, 10*time.Second).Should(Say("Server Started"))
+				apps = append(apps, app{Session: session, Port: port, Profile: profile, Dir: dir})
+			}
 		})
 
 		AfterEach(func() {
-			sendCtrlBreak(app1)
-			Eventually(app1, 10*time.Second).Should(Say("Server Shutdown"))
-			Eventually(app1).Should(Exit(0))
-			Expect(os.RemoveAll(app1Profile)).To(Succeed())
-			Expect(os.RemoveAll(app1Dir)).To(Succeed())
-
-			sendCtrlBreak(app2)
-			Eventually(app2, 10*time.Second).Should(Say("Server Shutdown"))
-			Eventually(app2).Should(Exit(0))
-			Expect(os.RemoveAll(app2Profile)).To(Succeed())
-			Expect(os.RemoveAll(app2Dir)).To(Succeed())
+			for _, a := range apps {
+				sendCtrlBreak(a.Session)
+				Eventually(a.Session, 10*time.Second).Should(Say("Server Shutdown"))
+				Eventually(a.Session).Should(Exit(0))
+				Expect(os.RemoveAll(a.Profile)).To(Succeed())
+				Expect(os.RemoveAll(a.Dir)).To(Succeed())
+			}
 		})
 
 		FIt("the site name and id should be unique for each app", func() {
-			url := fmt.Sprintf("http://localhost:%s/sitename", app1Port)
-			res, err := http.Get(url)
-			Expect(err).ToNot(HaveOccurred())
-			body, err := ioutil.ReadAll(res.Body)
-			Expect(err).ToNot(HaveOccurred())
-			Expect(res.StatusCode).To(Equal(200), string(body))
+			var domainAppIds [appCount]string
+			for i, a := range apps {
+				url := fmt.Sprintf("http://localhost:%s/sitename", a.Port)
+				res, err := http.Get(url)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(res.StatusCode).To(Equal(200))
 
-			// body, err := ioutil.ReadAll(res.Body)
-			// Expect(err).ToNot(HaveOccurred())
-			app1DomainAppId := string(body)
-
-			url = fmt.Sprintf("http://localhost:%s/sitename", app2Port)
-			res, err = http.Get(url)
-			Expect(err).ToNot(HaveOccurred())
-			Expect(res.StatusCode).To(Equal(200))
-
-			body, err = ioutil.ReadAll(res.Body)
-			Expect(err).ToNot(HaveOccurred())
-			app2DomainAppId := string(body)
-
-			Expect(app1DomainAppId).NotTo(Equal(app2DomainAppId))
+				body, err := ioutil.ReadAll(res.Body)
+				Expect(err).ToNot(HaveOccurred())
+				domainAppIds[i] = string(body)
+			}
+			for i := 0; i < len(domainAppIds); i++ {
+				for j := i + 1; j < len(domainAppIds); j++ {
+					Expect(domainAppIds[i]).NotTo(Equal(domainAppIds[j]))
+				}
+			}
 		})
 	})
 
