@@ -23,7 +23,7 @@ func New(port int, rootPath, tmpPath, contextPath, uuid string) (error, *HwcConf
 		TempDirectory: tmpPath,
 	}
 
-	defaultRootPath := filepath.Join(tmpPath, "wwwroot")
+	defaultRootPath := filepath.Join(config.TempDirectory, "wwwroot")
 	err := os.MkdirAll(defaultRootPath, 0700)
 	if err != nil {
 		return err, nil

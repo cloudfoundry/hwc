@@ -1,6 +1,9 @@
 package hwcconfig_test
 
 import (
+	"io/ioutil"
+	"os"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
@@ -8,13 +11,28 @@ import (
 )
 
 var _ = Describe("HwcApplication", func() {
+	var defaultRootPath string
+	var rootPath string
+	BeforeEach(func() {
+		var err error
+		defaultRootPath, err = ioutil.TempDir("", "wwwroot")
+		Expect(err).NotTo(HaveOccurred())
+		rootPath, err = ioutil.TempDir("", "app")
+		Expect(err).NotTo(HaveOccurred())
+	})
+
+	AfterEach(func() {
+		os.RemoveAll(defaultRootPath)
+		os.RemoveAll(rootPath)
+	})
+
 	Describe("New applications", func() {
 		var apps []*HwcApplication
 		Context("No context path", func() {
 			BeforeEach(func() {
 				apps = NewHwcApplications(
-					"c:\\user\\vcap\\tmp\\wwwroot",
-					"c:\\containerizer\\guid\\app",
+					defaultRootPath,
+					rootPath,
 					"/")
 			})
 			It("Creates one application", func() {
@@ -23,15 +41,15 @@ var _ = Describe("HwcApplication", func() {
 			It("creates the main app", func() {
 				Expect(apps).To(ContainElement(&HwcApplication{
 					Path:         "/",
-					PhysicalPath: "c:\\containerizer\\guid\\app",
+					PhysicalPath: rootPath,
 				}))
 			})
 		})
 		Context("one context path", func() {
 			BeforeEach(func() {
 				apps = NewHwcApplications(
-					"c:\\user\\vcap\\tmp\\wwwroot",
-					"c:\\containerizer\\guid\\app",
+					defaultRootPath,
+					rootPath,
 					"/contextpath1")
 			})
 			It("creates 2 applications", func() {
@@ -40,21 +58,21 @@ var _ = Describe("HwcApplication", func() {
 			It("creates the main app", func() {
 				Expect(apps).To(ContainElement(&HwcApplication{
 					Path:         "/contextpath1",
-					PhysicalPath: "c:\\containerizer\\guid\\app",
+					PhysicalPath: rootPath,
 				}))
 			})
 			It("creates the root app", func() {
 				Expect(apps).To(ContainElement(&HwcApplication{
 					Path:         "/",
-					PhysicalPath: "c:\\user\\vcap\\tmp\\wwwroot",
+					PhysicalPath: defaultRootPath,
 				}))
 			})
 		})
 		Context("two nested context paths", func() {
 			BeforeEach(func() {
 				apps = NewHwcApplications(
-					"c:\\user\\vcap\\tmp\\wwwroot",
-					"c:\\containerizer\\guid\\app",
+					defaultRootPath,
+					rootPath,
 					"/contextpath1/contextpath2")
 			})
 			It("creates 3 applications", func() {
@@ -63,19 +81,19 @@ var _ = Describe("HwcApplication", func() {
 			It("creates the main app", func() {
 				Expect(apps).To(ContainElement(&HwcApplication{
 					Path:         "/contextpath1/contextpath2",
-					PhysicalPath: "c:\\containerizer\\guid\\app",
+					PhysicalPath: rootPath,
 				}))
 			})
 			It("creates the intermediate app", func() {
 				Expect(apps).To(ContainElement(&HwcApplication{
 					Path:         "/contextpath1",
-					PhysicalPath: "c:\\user\\vcap\\tmp\\wwwroot",
+					PhysicalPath: defaultRootPath,
 				}))
 			})
 			It("creates the root app", func() {
 				Expect(apps).To(ContainElement(&HwcApplication{
 					Path:         "/",
-					PhysicalPath: "c:\\user\\vcap\\tmp\\wwwroot",
+					PhysicalPath: defaultRootPath,
 				}))
 			})
 		})
