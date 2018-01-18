@@ -19,8 +19,8 @@ import (
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	. "github.com/onsi/gomega/gbytes"
-	. "github.com/onsi/gomega/gexec"
+	"github.com/onsi/gomega/gbytes"
+	"github.com/onsi/gomega/gexec"
 )
 
 var _ = Describe("HWC", func() {
@@ -32,7 +32,7 @@ var _ = Describe("HWC", func() {
 	)
 
 	BeforeEach(func() {
-		binaryPath, err = BuildWithEnvironment("code.cloudfoundry.org/hwc", []string{"CGO_ENABLED=1", "GO_EXTLINK_ENABLED=1"})
+		binaryPath, err = gexec.BuildWithEnvironment("code.cloudfoundry.org/hwc", []string{"CGO_ENABLED=1", "GO_EXTLINK_ENABLED=1"})
 		Expect(err).ToNot(HaveOccurred())
 		tmpDir, err = ioutil.TempDir("", "")
 		Expect(err).ToNot(HaveOccurred())
@@ -47,10 +47,10 @@ var _ = Describe("HWC", func() {
 
 	AfterEach(func() {
 		os.RemoveAll(tmpDir)
-		CleanupBuildArtifacts()
+		gexec.CleanupBuildArtifacts()
 	})
 
-	sendCtrlBreak := func(s *Session) {
+	sendCtrlBreak := func(s *gexec.Session) {
 		d, err := syscall.LoadDLL("kernel32.dll")
 		Expect(err).ToNot(HaveOccurred())
 		p, err := d.FindProc("GenerateConsoleCtrlEvent")
@@ -59,7 +59,7 @@ var _ = Describe("HWC", func() {
 		Expect(r).ToNot(Equal(0), fmt.Sprintf("GenerateConsoleCtrlEvent: %v\n", err))
 	}
 
-	startApp := func(env map[string]string) (*Session, error) {
+	startApp := func(env map[string]string) (*gexec.Session, error) {
 		cmd := exec.Command(binaryPath)
 		vals := []string{}
 		for k, v := range env {
@@ -71,7 +71,7 @@ var _ = Describe("HWC", func() {
 			CreationFlags: syscall.CREATE_NEW_PROCESS_GROUP,
 		}
 
-		return Start(cmd, GinkgoWriter, GinkgoWriter)
+		return gexec.Start(cmd, GinkgoWriter, GinkgoWriter)
 	}
 
 	Context("when the app PORT is not set", func() {
@@ -82,8 +82,8 @@ var _ = Describe("HWC", func() {
 		It("errors", func() {
 			session, err := startApp(env)
 			Expect(err).ToNot(HaveOccurred())
-			Eventually(session, 10*time.Second).Should(Exit(1))
-			Eventually(session.Err).Should(Say("Missing PORT environment variable"))
+			Eventually(session, 10*time.Second).Should(gexec.Exit(1))
+			Eventually(session.Err).Should(gbytes.Say("Missing PORT environment variable"))
 		})
 	})
 
@@ -95,8 +95,8 @@ var _ = Describe("HWC", func() {
 		It("errors", func() {
 			session, err := startApp(env)
 			Expect(err).ToNot(HaveOccurred())
-			Eventually(session, 10*time.Second).Should(Exit(1))
-			Eventually(session.Err).Should(Say("Missing USERPROFILE environment variable"))
+			Eventually(session, 10*time.Second).Should(gexec.Exit(1))
+			Eventually(session.Err).Should(gbytes.Say("Missing USERPROFILE environment variable"))
 		})
 	})
 
@@ -108,27 +108,27 @@ var _ = Describe("HWC", func() {
 		It("errors", func() {
 			session, err := startApp(env)
 			Expect(err).ToNot(HaveOccurred())
-			Eventually(session, 10*time.Second).Should(Exit(1))
-			Eventually(session.Err).Should(Say("Missing required DLLs:"))
+			Eventually(session, 10*time.Second).Should(gexec.Exit(1))
+			Eventually(session.Err).Should(gbytes.Say("Missing required DLLs:"))
 		})
 	})
 
 	Context("Given that I have an ASP.NET MVC application (nora)", func() {
 		var (
-			session *Session
+			session *gexec.Session
 			err     error
 		)
 
 		BeforeEach(func() {
 			session, err = startApp(env)
 			Expect(err).ToNot(HaveOccurred())
-			Eventually(session, 10*time.Second).Should(Say("Server Started"))
+			Eventually(session, 10*time.Second).Should(gbytes.Say("Server Started"))
 		})
 
 		AfterEach(func() {
 			sendCtrlBreak(session)
-			Eventually(session, 10*time.Second).Should(Say("Server Shutdown"))
-			Eventually(session).Should(Exit(0))
+			Eventually(session, 10*time.Second).Should(gbytes.Say("Server Shutdown"))
+			Eventually(session).Should(gexec.Exit(0))
 		})
 
 		It("runs it on the specified port", func() {
@@ -177,7 +177,7 @@ var _ = Describe("HWC", func() {
 
 	Context("Given that I have an ASP.NET MVC application (nora) with an application path", func() {
 		var (
-			session *Session
+			session *gexec.Session
 			err     error
 		)
 
@@ -188,13 +188,13 @@ var _ = Describe("HWC", func() {
 			env["VCAP_SERVICES"] = "{}"
 			session, err = startApp(env)
 			Expect(err).ToNot(HaveOccurred())
-			Eventually(session, 10*time.Second).Should(Say("Server Started"))
+			Eventually(session, 10*time.Second).Should(gbytes.Say("Server Started"))
 		})
 
 		AfterEach(func() {
 			sendCtrlBreak(session)
-			Eventually(session, 10*time.Second).Should(Say("Server Shutdown"))
-			Eventually(session).Should(Exit(0))
+			Eventually(session, 10*time.Second).Should(gbytes.Say("Server Shutdown"))
+			Eventually(session).Should(gexec.Exit(0))
 		})
 
 		It("runs it on the specified port and path", func() {
@@ -213,7 +213,7 @@ var _ = Describe("HWC", func() {
 	Context("when multiple apps are started by different hwc processes", func() {
 		const appCount = 2
 		type app struct {
-			Session *Session
+			Session *gexec.Session
 			Port    string
 			Profile string
 			Dir     string
@@ -240,7 +240,7 @@ var _ = Describe("HWC", func() {
 
 				session, err := startApp(env)
 				Expect(err).ToNot(HaveOccurred())
-				Eventually(session, 10*time.Second).Should(Say("Server Started"))
+				Eventually(session, 10*time.Second).Should(gbytes.Say("Server Started"))
 
 				apps = append(apps, app{Session: session, Port: port, Profile: profile, Dir: dir})
 			}
@@ -249,14 +249,14 @@ var _ = Describe("HWC", func() {
 		AfterEach(func() {
 			for _, a := range apps {
 				sendCtrlBreak(a.Session)
-				Eventually(a.Session, 10*time.Second).Should(Say("Server Shutdown"))
-				Eventually(a.Session).Should(Exit(0))
+				Eventually(a.Session, 10*time.Second).Should(gbytes.Say("Server Shutdown"))
+				Eventually(a.Session).Should(gexec.Exit(0))
 				Expect(os.RemoveAll(a.Profile)).To(Succeed())
 				Expect(os.RemoveAll(a.Dir)).To(Succeed())
 			}
 		})
 
-		FIt("the site name and id should be unique for each app", func() {
+		It("the site name and id should be unique for each app", func() {
 			var domainAppIds [appCount]string
 			for i, a := range apps {
 				url := fmt.Sprintf("http://localhost:%s/sitename", a.Port)
@@ -278,7 +278,7 @@ var _ = Describe("HWC", func() {
 
 	Context("The app has an infinite redirect loop", func() {
 		var (
-			session *Session
+			session *gexec.Session
 			err     error
 		)
 
@@ -286,13 +286,13 @@ var _ = Describe("HWC", func() {
 			env["APP_NAME"] = "stack-overflow"
 			session, err = startApp(env)
 			Expect(err).ToNot(HaveOccurred())
-			Eventually(session, 10*time.Second).Should(Say("Server Started"))
+			Eventually(session, 10*time.Second).Should(gbytes.Say("Server Started"))
 		})
 
 		AfterEach(func() {
 			sendCtrlBreak(session)
-			Eventually(session, 10*time.Second).Should(Say("Server Shutdown"))
-			Eventually(session).Should(Exit(0))
+			Eventually(session, 10*time.Second).Should(gbytes.Say("Server Shutdown"))
+			Eventually(session).Should(gexec.Exit(0))
 		})
 
 		It("does not get a stack overflow error", func() {
@@ -306,7 +306,7 @@ var _ = Describe("HWC", func() {
 
 	Context("Given that I have an ASP.NET Classic application", func() {
 		var (
-			session *Session
+			session *gexec.Session
 			err     error
 		)
 
@@ -314,13 +314,13 @@ var _ = Describe("HWC", func() {
 			env["APP_NAME"] = "asp-classic"
 			session, err = startApp(env)
 			Expect(err).ToNot(HaveOccurred())
-			Eventually(session, 10*time.Second).Should(Say("Server Started"))
+			Eventually(session, 10*time.Second).Should(gbytes.Say("Server Started"))
 		})
 
 		AfterEach(func() {
 			sendCtrlBreak(session)
-			Eventually(session, 10*time.Second).Should(Say("Server Shutdown"))
-			Eventually(session).Should(Exit(0))
+			Eventually(session, 10*time.Second).Should(gbytes.Say("Server Shutdown"))
+			Eventually(session).Should(gexec.Exit(0))
 		})
 
 		It("runs on the specified port", func() {
