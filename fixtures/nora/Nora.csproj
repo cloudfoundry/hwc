@@ -151,8 +151,7 @@
   <Target Name="GatherAllFilesToPublish">
   </Target>
   <PropertyGroup>
-    <PreBuildEvent>xcopy /y $(SOLUTIONDIR)bin\mmapleak.exe $(TARGETDIR)
-xcopy /y $(SOLUTIONDIR)bin\JobBreakoutTest.exe $(TARGETDIR)
-xcopy /y $(SOLUTIONDIR)bin\BreakoutBomb.exe $(TARGETDIR)</PreBuildEvent>
+    <PreBuildEvent>
+    </PreBuildEvent>
   </PropertyGroup>
 </Project>
