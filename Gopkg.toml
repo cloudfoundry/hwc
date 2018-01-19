@@ -1,0 +1,26 @@
+# Gopkg.toml example
+#
+# Refer to https://github.com/golang/dep/blob/master/docs/Gopkg.toml.md
+# for detailed Gopkg.toml documentation.
+
+ignored = ["golang.org/*"]
+
+[[constraint]]
+  name = "github.com/cloudfoundry-community/go-cfenv"
+  branch = "master"
+
+[[constraint]]
+  name = "github.com/onsi/ginkgo"
+  branch = "master"
+
+[[constraint]]
+  name = "github.com/onsi/gomega"
+  branch = "master"
+
+[[override]]
+  name = "gopkg.in/yaml.v2"
+  branch = "v2"
+
+[[override]]
+  name = "github.com/mitchellh/mapstructure"
+  branch = "master"
