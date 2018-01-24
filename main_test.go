@@ -105,6 +105,10 @@ var _ = Describe("HWC", func() {
 			By("creating an IIS Temporary Compressed Files directory", func() {
 				Expect(filepath.Join(app.profileDir, "tmp", "IIS Temporary Compressed Files")).To(BeADirectory())
 			})
+
+			By("creating an ASP Compiled Templates directory", func() {
+				Expect(filepath.Join(app.profileDir, "tmp", "ASP Compiled Templates")).To(BeADirectory())
+			})
 		})
 
 		It("the static compression directory is valid", func() {
@@ -263,6 +267,18 @@ var _ = Describe("HWC", func() {
 			body, err := ioutil.ReadAll(res.Body)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(string(body)).To(Equal("Hello World!"))
+		})
+
+		It("the asp compiled templates directory is valid", func() {
+			url := fmt.Sprintf("http://localhost:%d", app.port)
+			res, err := http.Get(url)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(res.StatusCode).To(Equal(200))
+
+			errorMessage := fmt.Sprintf(`Error: The Template Persistent Cache initialization failed for Application Pool 'AppPool%d' because of the following error: Could not create a Disk Cache Sub-directory for the Application Pool. The data may have additional error codes..`, app.port)
+			output, err := exec.Command("powershell", "-command", fmt.Sprintf(`(get-eventlog -LogName Application -Message "%s").Message`, errorMessage)).CombinedOutput()
+			Expect(err).NotTo(HaveOccurred())
+			Expect(string(output)).To(ContainSubstring("No matches found"))
 		})
 	})
 })

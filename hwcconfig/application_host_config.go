@@ -213,7 +213,9 @@ const applicationHostConfigTemplate = `<?xml version="1.0" encoding="UTF-8"?>
 
   <system.webServer>
 
-    <asp />
+    <asp>
+      <cache diskTemplateCacheDirectory="{{.Config.ASPCompiledTemplatesDirectory}}" />
+    </asp>
 
     <caching enabled="true" enableKernelCache="true">
     </caching>

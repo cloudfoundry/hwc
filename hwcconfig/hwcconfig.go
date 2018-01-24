@@ -6,10 +6,11 @@ import (
 )
 
 type HwcConfig struct {
-	Instance                    string
-	Port                        int
-	TempDirectory               string
-	IISCompressedFilesDirectory string
+	Instance                      string
+	Port                          int
+	TempDirectory                 string
+	IISCompressedFilesDirectory   string
+	ASPCompiledTemplatesDirectory string
 
 	Applications              []*HwcApplication
 	AspnetConfigPath          string
@@ -19,10 +20,11 @@ type HwcConfig struct {
 
 func New(port int, rootPath, tmpPath, contextPath, uuid string) (error, *HwcConfig) {
 	config := &HwcConfig{
-		Instance:                    uuid,
-		Port:                        port,
-		TempDirectory:               tmpPath,
-		IISCompressedFilesDirectory: filepath.Join(tmpPath, "IIS Temporary Compressed Files"),
+		Instance:                      uuid,
+		Port:                          port,
+		TempDirectory:                 tmpPath,
+		IISCompressedFilesDirectory:   filepath.Join(tmpPath, "IIS Temporary Compressed Files"),
+		ASPCompiledTemplatesDirectory: filepath.Join(tmpPath, "ASP Compiled Templates"),
 	}
 
 	defaultRootPath := filepath.Join(config.TempDirectory, "wwwroot")
@@ -38,6 +40,11 @@ func New(port int, rootPath, tmpPath, contextPath, uuid string) (error, *HwcConf
 	}
 
 	err = os.MkdirAll(config.IISCompressedFilesDirectory, 0700)
+	if err != nil {
+		return err, nil
+	}
+
+	err = os.MkdirAll(config.ASPCompiledTemplatesDirectory, 0700)
 	if err != nil {
 		return err, nil
 	}
