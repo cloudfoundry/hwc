@@ -101,6 +101,22 @@ var _ = Describe("HWC", func() {
 				Expect(filepath.Join(app.profileDir, "tmp", "config", "ApplicationHost.config")).To(BeAnExistingFile())
 				Expect(filepath.Join(app.profileDir, "tmp", "config", "Aspnet.config")).To(BeAnExistingFile())
 			})
+
+			By("creating an IIS Temporary Compressed Files directory", func() {
+				Expect(filepath.Join(app.profileDir, "tmp", "IIS Temporary Compressed Files")).To(BeADirectory())
+			})
+		})
+
+		It("the static compression directory is valid", func() {
+			url := fmt.Sprintf("http://localhost:%d", app.port)
+			res, err := http.Get(url)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(res.StatusCode).To(Equal(200))
+
+			errorMessage := fmt.Sprintf(`The directory specified for caching compressed content %s\tmp\IIS Temporary Compressed Files\AppPool%d is invalid.  Static compression is being disabled.`, app.profileDir, app.port)
+			output, err := exec.Command("powershell", "-command", fmt.Sprintf(`(get-eventlog -LogName Application -Message "%s").Message`, errorMessage)).CombinedOutput()
+			Expect(err).NotTo(HaveOccurred())
+			Expect(string(output)).To(ContainSubstring("No matches found"))
 		})
 
 		It("does not add unexpected custom headers", func() {

@@ -241,7 +241,7 @@ const applicationHostConfigTemplate = `<?xml version="1.0" encoding="UTF-8"?>
       {{end}}
     </globalModules>
 
-    <httpCompression directory="{{.Config.TempDirectory}}\IIS Temporary Compressed Files">
+    <httpCompression directory="{{.Config.IISCompressedFilesDirectory}}">
       <scheme name="gzip" dll="%Windir%\system32\inetsrv\gzip.dll" />
       <staticTypes>
         <add mimeType="text/*" enabled="true" />
