@@ -16,19 +16,64 @@
 [[projects]]
   branch = "master"
   name = "github.com/onsi/ginkgo"
-  packages = [".","config","internal/codelocation","internal/containernode","internal/failer","internal/leafnodes","internal/remote","internal/spec","internal/spec_iterator","internal/specrunner","internal/suite","internal/testingtproxy","internal/writer","reporters","reporters/stenographer","reporters/stenographer/support/go-colorable","reporters/stenographer/support/go-isatty","types"]
+  packages = [
+    ".",
+    "config",
+    "ginkgo",
+    "ginkgo/convert",
+    "ginkgo/interrupthandler",
+    "ginkgo/nodot",
+    "ginkgo/testrunner",
+    "ginkgo/testsuite",
+    "ginkgo/watch",
+    "internal/codelocation",
+    "internal/containernode",
+    "internal/failer",
+    "internal/leafnodes",
+    "internal/remote",
+    "internal/spec",
+    "internal/spec_iterator",
+    "internal/specrunner",
+    "internal/suite",
+    "internal/testingtproxy",
+    "internal/writer",
+    "reporters",
+    "reporters/stenographer",
+    "reporters/stenographer/support/go-colorable",
+    "reporters/stenographer/support/go-isatty",
+    "types"
+  ]
   revision = "7354a07ba45540aeca339625e5d44714b379e827"
 
 [[projects]]
+  branch = "master"
   name = "github.com/onsi/gomega"
-  packages = [".","format","gbytes","gexec","internal/assertion","internal/asyncassertion","internal/oraclematcher","internal/testingtsupport","matchers","matchers/support/goraph/bipartitegraph","matchers/support/goraph/edge","matchers/support/goraph/node","matchers/support/goraph/util","types"]
-  revision = "003f63b7f4cff3fc95357005358af2de0f5fe152"
-  version = "v1.3.0"
+  packages = [
+    ".",
+    "format",
+    "gbytes",
+    "gexec",
+    "internal/assertion",
+    "internal/asyncassertion",
+    "internal/oraclematcher",
+    "internal/testingtsupport",
+    "matchers",
+    "matchers/support/goraph/bipartitegraph",
+    "matchers/support/goraph/edge",
+    "matchers/support/goraph/node",
+    "matchers/support/goraph/util",
+    "types"
+  ]
+  revision = "4fc17627b66f18840f3604eec277fe1af7f6d4a5"
 
 [[projects]]
   branch = "master"
   name = "golang.org/x/net"
-  packages = ["html","html/atom","html/charset"]
+  packages = [
+    "html",
+    "html/atom",
+    "html/charset"
+  ]
   revision = "5ccada7d0a7ba9aeb5d3aca8d3501b4c2a509fec"
 
 [[projects]]
@@ -40,7 +85,25 @@
 [[projects]]
   branch = "master"
   name = "golang.org/x/text"
-  packages = ["encoding","encoding/charmap","encoding/htmlindex","encoding/internal","encoding/internal/identifier","encoding/japanese","encoding/korean","encoding/simplifiedchinese","encoding/traditionalchinese","encoding/unicode","internal/gen","internal/tag","internal/utf8internal","language","runes","transform","unicode/cldr"]
+  packages = [
+    "encoding",
+    "encoding/charmap",
+    "encoding/htmlindex",
+    "encoding/internal",
+    "encoding/internal/identifier",
+    "encoding/japanese",
+    "encoding/korean",
+    "encoding/simplifiedchinese",
+    "encoding/traditionalchinese",
+    "encoding/unicode",
+    "internal/gen",
+    "internal/tag",
+    "internal/utf8internal",
+    "language",
+    "runes",
+    "transform",
+    "unicode/cldr"
+  ]
   revision = "e19ae1496984b1c655b8044a65c0300a3c878dd3"
 
 [[projects]]
@@ -52,6 +115,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "f5eb3977c4c527a0deb7787a8357e5ffe1e867b97b83147ff8fa27c48a023788"
+  inputs-digest = "564b914d1a3f5c23edeafcf413ae91b29550dac53862f5f03d3fe69bb194f8b5"
   solver-name = "gps-cdcl"
   solver-version = 1

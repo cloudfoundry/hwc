@@ -3,6 +3,11 @@
 # Refer to https://github.com/golang/dep/blob/master/docs/Gopkg.toml.md
 # for detailed Gopkg.toml documentation.
 
+required = ["github.com/onsi/ginkgo/ginkgo"]
+
+[prune]
+  unused-packages = true
+  go-tests = true
 
 [[constraint]]
   name = "github.com/cloudfoundry-community/go-cfenv"
