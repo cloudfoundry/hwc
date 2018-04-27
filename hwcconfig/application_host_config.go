@@ -191,7 +191,7 @@ const applicationHostConfigTemplate = `<?xml version="1.0" encoding="UTF-8"?>
     <sites>
       <siteDefaults>
         <logFile logFormat="W3C" directory="{{.Config.TempDirectory}}\LogFiles" />
-        <traceFailedRequestsLogging enabled="false" />
+        <traceFailedRequestsLogging enabled="true" directory="{{.Config.TempDirectory}}\LogFiles" />
       </siteDefaults>
       <applicationDefaults applicationPool="AppPool{{.Config.Port}}" />
       <virtualDirectoryDefaults allowSubDirConfig="true" />
@@ -275,7 +275,7 @@ const applicationHostConfigTemplate = `<?xml version="1.0" encoding="UTF-8"?>
       <error statusCode="502" prefixLanguageFilePath="%SystemDrive%\inetpub\custerr" path="502.htm" />
     </httpErrors>
 
-    <httpLogging dontLog="true" />
+    <httpLogging dontLog="false" />
 
     <httpProtocol>
       <customHeaders>

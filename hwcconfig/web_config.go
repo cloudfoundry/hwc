@@ -476,6 +476,7 @@ const webConfigTemplate = `<?xml version="1.0" encoding="UTF-8"?>
                 <add name="RowToParametersTransformer" type="System.Web.UI.WebControls.WebParts.RowToParametersTransformer" />
             </transformers>
         </webParts>
+				<trace enabled="true" writeToDiagnosticsTrace="true" mostRecent="true" pageOutput="false" />
     </system.web>
     <system.serviceModel>
         <serviceHostingEnvironment>
@@ -491,5 +492,26 @@ const webConfigTemplate = `<?xml version="1.0" encoding="UTF-8"?>
             <add xamlRootElementType="System.Activities.Activity, System.Activities, Version=4.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35" httpHandlerType="System.ServiceModel.Activities.Activation.ServiceModelActivitiesActivationHandlerAsync, System.ServiceModel.Activation, Version=4.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35"/>
         </httpHandlers>
     </system.xaml.hosting>
+
+		<system.diagnostics>
+  <sharedListeners>
+    <add name="PcfLogListener" type="System.Diagnostics.ConsoleTraceListener" />
+  </sharedListeners>
+  <sources>
+    <source name="System.Net">
+      <listeners>
+        <add name="PcfLogListener"/>
+      </listeners>
+    </source>
+  </sources>
+  <trace autoflush="false" indentsize="2">
+    <listeners>
+      <add name="PcfLogListener"/>
+    </listeners>
+  </trace>
+  <switches>
+    <add name="System.Net" value="Information" />
+  </switches>
+</system.diagnostics>
 </configuration>
 `
