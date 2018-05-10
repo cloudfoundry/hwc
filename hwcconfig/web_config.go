@@ -34,6 +34,7 @@ const webConfigTemplate = `<?xml version="1.0" encoding="UTF-8"?>
     -->
     <location allowOverride="true">
         <system.web>
+				    <hostingEnvironment shadowCopyBinAssemblies="false" />
             <securityPolicy>
                 <trustLevel name="Full" policyFile="internal" />
                 <trustLevel name="High" policyFile="web_hightrust.config" />
