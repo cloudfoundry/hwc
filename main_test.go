@@ -15,6 +15,7 @@ import (
 	"strconv"
 	"strings"
 	"syscall"
+	"time"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -59,6 +60,53 @@ var _ = Describe("HWC", func() {
 			Eventually(app.session).Should(gexec.Exit(1))
 			Eventually(app.session.Err).Should(gbytes.Say("Missing required DLLs:"))
 			stopApp(app)
+		})
+	})
+
+	Context("Given that I have http compression", func() {
+		var app hwcApp
+
+		BeforeEach(func() {
+			app = startApp("ASPNetTemplateApplication")
+			Eventually(app.session).Should(gbytes.Say("Server Started"))
+		})
+
+		AfterEach(func() {
+			stopApp(app)
+			Eventually(app.session).Should(gexec.Exit(0))
+			Eventually(app.session).Should(gbytes.Say("Server Shutdown"))
+		})
+
+		It("does static compression", func() {
+			staticUrl := fmt.Sprintf("http://localhost:%d/Content/bootstrap.css", app.port)
+			var header http.Header
+
+			//the app needs more than one request in order to do the compression
+			for i := 0; i < 2; i++ {
+				header = successfulRequest(staticUrl)
+			}
+
+			Expect(header["Content-Encoding"]).To(ContainElement("gzip"))
+			Expect(header["Vary"]).To(ContainElement("Accept-Encoding"))
+
+			cachePath := filepath.Join(app.profileDir, "tmp", "IIS Temporary Compressed Files", fmt.Sprintf("AppPool%d", app.port), "$^_gzip_C^")
+			cacheInfo, err := os.Stat(cachePath)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(cacheInfo.IsDir())
+			Expect(header["Content-Length"]).To(ContainElement("22748"))
+		})
+
+		It("does dynamic compression", func() {
+			dynamicUrl := fmt.Sprintf("http://localhost:%d/Content/css", app.port)
+			var header http.Header
+
+			//the app needs more than one request in order to do the compression
+			for i := 0; i < 2; i++ {
+				header = successfulRequest(dynamicUrl)
+			}
+			Expect(header["Content-Encoding"]).To(ContainElement("gzip"))
+			Expect(header["Vary"]).To(ContainElement("User-Agent,Accept-Encoding"))
+			Expect(header["Content-Length"]).To(ContainElement("23434"))
 		})
 	})
 
@@ -109,18 +157,6 @@ var _ = Describe("HWC", func() {
 			By("creating an ASP Compiled Templates directory", func() {
 				Expect(filepath.Join(app.profileDir, "tmp", "ASP Compiled Templates")).To(BeADirectory())
 			})
-		})
-
-		It("the static compression directory is valid", func() {
-			url := fmt.Sprintf("http://localhost:%d", app.port)
-			res, err := http.Get(url)
-			Expect(err).ToNot(HaveOccurred())
-			Expect(res.StatusCode).To(Equal(200))
-
-			errorMessage := fmt.Sprintf(`The directory specified for caching compressed content %s\tmp\IIS Temporary Compressed Files\AppPool%d is invalid.  Static compression is being disabled.`, app.profileDir, app.port)
-			output, err := exec.Command("powershell", "-command", fmt.Sprintf(`(get-eventlog -LogName Application -Message "%s").Message`, errorMessage)).CombinedOutput()
-			Expect(err).NotTo(HaveOccurred())
-			Expect(string(output)).To(ContainSubstring("No matches found"))
 		})
 
 		It("does not add unexpected custom headers", func() {
@@ -299,7 +335,7 @@ func stopApp(app hwcApp) {
 	Expect(r).ToNot(Equal(0), fmt.Sprintf("GenerateConsoleCtrlEvent: %v\n", err))
 	Eventually(app.session).Should(gexec.Exit())
 
-	Expect(os.RemoveAll(app.appDir)).To(Succeed())
+	Eventually(func() error { return os.RemoveAll(app.appDir) }, 10*time.Second, time.Second).Should(Succeed())
 	Expect(os.RemoveAll(app.profileDir)).To(Succeed())
 }
 
@@ -421,4 +457,18 @@ func writeToFile(source io.Reader, destFile string, mode os.FileMode) error {
 	}
 
 	return nil
+}
+func successfulRequest(url string) http.Header {
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		fmt.Println("Err", err.Error())
+		os.Exit(1)
+	}
+	req.Header.Set("Accept-Encoding", "gzip")
+	client := &http.Client{}
+	res, _ := client.Do(req)
+	defer res.Body.Close()
+	Expect(res.StatusCode).To(Equal(200))
+	ioutil.ReadAll(res.Body)
+	return res.Header
 }

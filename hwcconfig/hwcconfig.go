@@ -1,6 +1,7 @@
 package hwcconfig
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 )
@@ -40,6 +41,14 @@ func New(port int, rootPath, tmpPath, contextPath, uuid string) (error, *HwcConf
 	}
 
 	err = os.MkdirAll(config.IISCompressedFilesDirectory, 0700)
+	if err != nil {
+		return err, nil
+	}
+
+	appPoolPath := fmt.Sprintf("AppPool%d", port)
+	cachePath := filepath.Join(tmpPath, "IIS Temporary Compressed Files", appPoolPath)
+
+	err = os.MkdirAll(cachePath, 0700)
 	if err != nil {
 		return err, nil
 	}

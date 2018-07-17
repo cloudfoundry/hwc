@@ -243,8 +243,8 @@ const applicationHostConfigTemplate = `<?xml version="1.0" encoding="UTF-8"?>
       {{end}}
     </globalModules>
 
-    <httpCompression directory="{{.Config.IISCompressedFilesDirectory}}">
-      <scheme name="gzip" dll="%Windir%\system32\inetsrv\gzip.dll" />
+    <httpCompression directory="{{.Config.IISCompressedFilesDirectory}}" noCompressionForProxies="false">
+      <scheme name="gzip" dll="%Windir%\system32\inetsrv\gzip.dll" dynamicCompressionLevel="4" staticCompressionLevel="9"/>
       <staticTypes>
         <add mimeType="text/*" enabled="true" />
         <add mimeType="message/*" enabled="true" />
@@ -857,6 +857,7 @@ const applicationHostConfigTemplate = `<?xml version="1.0" encoding="UTF-8"?>
     <modules>
       <add name="HttpCacheModule" lockItem="true" />
       <add name="StaticCompressionModule" lockItem="true" />
+      <add name="DynamicCompressionModule" lockItem="true" />
       <add name="DefaultDocumentModule" lockItem="true" />
       <add name="DirectoryListingModule" lockItem="true" />
       <add name="IsapiFilterModule" lockItem="true" />
