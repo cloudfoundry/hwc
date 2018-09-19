@@ -48,6 +48,19 @@ var globalModules = []map[string]string{
 
 func (c *HwcConfig) generateApplicationHostConfig() error {
 	missing := []string{}
+
+	// if os.Getenv("CUSTOMMODULES") is not empty, add values to globalModules
+	// CUSTOMMODULES format: "name,path;name,path"
+	customModules := os.Getenv("CUSTOMMODULES")
+	var modulesConf []map[string]string
+	if customModules != "" {
+		for _, module := range strings.Split(customModules, ";") {
+			m := strings.Split(module, ",")
+			globalModules = append(globalModules, map[string]string{"Name": m[0], "Image": m[1]})
+			modulesConf = append(modulesConf, map[string]string{"Name": m[0]})
+		}
+	}
+
 	for _, v := range globalModules {
 		imagePath := os.ExpandEnv(strings.Replace(v["Image"], `%windir%`, `${windir}`, -1))
 		_, err := os.Stat(imagePath)
@@ -82,12 +95,14 @@ func (c *HwcConfig) generateApplicationHostConfig() error {
 	type templateInput struct {
 		Config        *HwcConfig
 		GlobalModules []map[string]string
+		ModulesConf   []map[string]string
 		Rewrite       bool
 	}
 
 	t := templateInput{
 		Config:        c,
 		GlobalModules: globalModules,
+		ModulesConf:   modulesConf,
 		Rewrite:       rewrite,
 	}
 
@@ -855,6 +870,9 @@ const applicationHostConfigTemplate = `<?xml version="1.0" encoding="UTF-8"?>
   <system.webServer>
 
     <modules>
+      {{range .ModulesConf}}
+      <add name="{{ index . "Name" }}" lockItem="true" />
+	  {{end}}
       <add name="HttpCacheModule" lockItem="true" />
       <add name="StaticCompressionModule" lockItem="true" />
       <add name="DynamicCompressionModule" lockItem="true" />
