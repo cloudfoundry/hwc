@@ -329,10 +329,29 @@ type hwcApp struct {
 func stopApp(app hwcApp) {
 	d, err := syscall.LoadDLL("kernel32.dll")
 	Expect(err).ToNot(HaveOccurred())
+
+	freeConsole, err := d.FindProc("FreeConsole")
+	Expect(err).ToNot(HaveOccurred())
+	attachConsole, err := d.FindProc("AttachConsole")
+	Expect(err).ToNot(HaveOccurred())
+
 	p, err := d.FindProc("GenerateConsoleCtrlEvent")
 	Expect(err).ToNot(HaveOccurred())
 	r, _, err := p.Call(syscall.CTRL_BREAK_EVENT, uintptr(app.session.Command.Process.Pid))
 	Expect(r).ToNot(Equal(0), fmt.Sprintf("GenerateConsoleCtrlEvent: %v\n", err))
+
+	r1, _, _ := freeConsole.Call()
+	if r1 == 0 {
+		err = syscall.GetLastError()
+		Expect(err).ToNot(HaveOccurred())
+	}
+
+	r1, _, _ = attachConsole.Call(uintptr(^uint32(0)))
+	if r1 == 0 {
+		err = syscall.GetLastError()
+		Expect(err).ToNot(HaveOccurred())
+	}
+
 	Eventually(app.session).Should(gexec.Exit())
 
 	Eventually(func() error { return os.RemoveAll(app.appDir) }, 10*time.Second, time.Second).Should(Succeed())
@@ -368,6 +387,29 @@ func startAppWithEnv(fixtureName string, env []string) hwcApp {
 	cmd.SysProcAttr = &syscall.SysProcAttr{
 		CreationFlags: syscall.CREATE_NEW_PROCESS_GROUP,
 	}
+
+	Expect(err).ToNot(HaveOccurred())
+
+	d, err := syscall.LoadDLL("kernel32.dll")
+	Expect(err).ToNot(HaveOccurred())
+
+	allocConsole, err := d.FindProc("AllocConsole")
+	Expect(err).ToNot(HaveOccurred())
+	freeConsole, err := d.FindProc("FreeConsole")
+	Expect(err).ToNot(HaveOccurred())
+
+	r1, _, _ := freeConsole.Call()
+	if r1 == 0 {
+		err = syscall.GetLastError()
+		Expect(err).ToNot(HaveOccurred())
+	}
+
+	r1, _, _ = allocConsole.Call()
+	if r1 == 0 {
+		err = syscall.GetLastError()
+		Expect(err).ToNot(HaveOccurred())
+	}
+
 	session, err := gexec.Start(cmd, GinkgoWriter, GinkgoWriter)
 	Expect(err).ToNot(HaveOccurred())
 
