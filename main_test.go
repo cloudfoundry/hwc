@@ -110,6 +110,49 @@ var _ = Describe("HWC", func() {
 		})
 	})
 
+	FContext("Given that I have a nora with http compression", func() {
+		var app hwcApp
+
+		BeforeEach(func() {
+			app = startApp("nora")
+			Eventually(app.session).Should(gbytes.Say("Server Started"))
+		})
+
+		AfterEach(func() {
+			stopApp(app)
+			Eventually(app.session).Should(gexec.Exit(0))
+			Eventually(app.session).Should(gbytes.Say("Server Shutdown"))
+		})
+
+		It("does dynamic compression for JSON", func() {
+			dynamicUrl := fmt.Sprintf("http://localhost:%d/healthcheck", app.port)
+			var header http.Header
+
+			//the app needs more than one request in order to do the compression
+			for i := 0; i < 2; i++ {
+				header = successfulRequest(dynamicUrl)
+			}
+			Expect(header["Content-Type"]).To(ContainElement("application/json; charset=utf-8"))
+			Expect(header["Content-Encoding"]).To(ContainElement("gzip"))
+			Expect(header["Content-Length"]).To(ContainElement("52"))
+			Expect(header["Vary"]).To(ContainElement("Accept-Encoding"))
+		})
+
+		It("does dynamic compression for text", func() {
+			dynamicUrl := fmt.Sprintf("http://localhost:%d/healthcheck", app.port)
+			var header http.Header
+
+			//the app needs more than one request in order to do the compression
+			for i := 0; i < 2; i++ {
+				header = successfulRequest(dynamicUrl)
+			}
+			Expect(header["Content-Type"]).To(ContainElement("application/json; charset=utf-8"))
+			Expect(header["Content-Encoding"]).To(ContainElement("gzip"))
+			Expect(header["Content-Length"]).To(ContainElement("52"))
+			Expect(header["Vary"]).To(ContainElement("Accept-Encoding"))
+		})
+	})
+
 	Context("Given that I have an ASP.NET MVC application (nora)", func() {
 		var app hwcApp
 

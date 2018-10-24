@@ -121,7 +121,7 @@ const applicationHostConfigTemplate = `<?xml version="1.0" encoding="UTF-8"?>
       <section name="fastCgi" allowDefinition="AppHostOnly" overrideModeDefault="Deny" />
       <section name="globalModules" allowDefinition="AppHostOnly" overrideModeDefault="Deny" />
       <section name="handlers" overrideModeDefault="Allow" />
-      <section name="httpCompression" allowDefinition="AppHostOnly" overrideModeDefault="Deny" />
+      <section name="httpCompression" overrideModeDefault="Allow" />
       <section name="httpErrors" overrideModeDefault="Allow" />
       <section name="httpLogging" overrideModeDefault="Deny" />
       <section name="httpProtocol" overrideModeDefault="Allow" />
@@ -244,23 +244,7 @@ const applicationHostConfigTemplate = `<?xml version="1.0" encoding="UTF-8"?>
     </globalModules>
 
     <httpCompression directory="{{.Config.IISCompressedFilesDirectory}}" noCompressionForProxies="false">
-      <scheme name="gzip" dll="%Windir%\system32\inetsrv\gzip.dll" dynamicCompressionLevel="4" staticCompressionLevel="9"/>
-      <staticTypes>
-        <add mimeType="text/*" enabled="true" />
-        <add mimeType="message/*" enabled="true" />
-        <add mimeType="application/x-javascript" enabled="true" />
-        <add mimeType="application/javascript" enabled="true" />
-        <add mimeType="application/atom+xml" enabled="true" />
-        <add mimeType="application/xaml+xml" enabled="true" />
-        <add mimeType="*/*" enabled="false" />
-      </staticTypes>
-      <dynamicTypes>
-        <add mimeType="text/*" enabled="true" />
-        <add mimeType="message/*" enabled="true" />
-        <add mimeType="application/x-javascript" enabled="true" />
-        <add mimeType="application/javascript" enabled="true" />
-        <add mimeType="*/*" enabled="false" />
-      </dynamicTypes>
+      <scheme name="gzip" dll="%Windir%\system32\inetsrv\gzip.dll" doDynamicCompression="true" doStaticCompression="true" dynamicCompressionLevel="4" staticCompressionLevel="9"/>
     </httpCompression>
 
     <httpErrors lockAttributes="allowAbsolutePathsWhenDelegated,defaultPath">
