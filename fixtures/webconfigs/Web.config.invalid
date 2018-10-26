@@ -63,7 +63,8 @@
       <remove name="TRACEVerbHandler" />
       <add name="ExtensionlessUrlHandler-Integrated-4.0" path="*." verb="*" type="System.Web.Handlers.TransferRequestHandler" preCondition="integratedMode,runtimeVersionv4.0" />
     </handlers>
-    <httpCompression>
+    <httpCompression nastykey="yeah" anotherbadkey="foo">
+      <scheme
       <staticTypes>
         <add mimeType="application/json" enabled="true" />
         <add mimeType="image/jpeg" enabled="true" />

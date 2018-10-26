@@ -26,7 +26,7 @@ import (
 var _ = Describe("HWC", func() {
 	Context("when the app PORT is not set", func() {
 		It("errors", func() {
-			app := startAppWithEnv("nora", []string{"PORT="})
+			app := startAppWithEnv("nora", []string{"PORT="}, false)
 			Eventually(app.session).Should(gexec.Exit(1))
 			Eventually(app.session.Err).Should(gbytes.Say("Missing PORT environment variable"))
 			stopApp(app)
@@ -35,7 +35,7 @@ var _ = Describe("HWC", func() {
 
 	Context("when the app USERPROFILE is not set", func() {
 		It("errors", func() {
-			app := startAppWithEnv("nora", []string{"USERPROFILE="})
+			app := startAppWithEnv("nora", []string{"USERPROFILE="}, false)
 			Eventually(app.session).Should(gexec.Exit(1))
 			Eventually(app.session.Err).Should(gbytes.Say("Missing USERPROFILE environment variable"))
 			stopApp(app)
@@ -56,7 +56,7 @@ var _ = Describe("HWC", func() {
 		})
 
 		It("errors", func() {
-			app := startAppWithEnv("nora", []string{"WINDIR="})
+			app := startAppWithEnv("nora", []string{"WINDIR="}, false)
 			Eventually(app.session).Should(gexec.Exit(1))
 			Eventually(app.session.Err).Should(gbytes.Say("Missing required DLLs:"))
 			stopApp(app)
@@ -107,6 +107,43 @@ var _ = Describe("HWC", func() {
 			Expect(header["Content-Encoding"]).To(ContainElement("gzip"))
 			Expect(header["Vary"]).To(ContainElement("User-Agent,Accept-Encoding"))
 			Expect(header["Content-Length"]).To(ContainElement("23434"))
+		})
+	})
+
+	Context("Given that I have a nora with http compression", func() {
+		var app hwcApp
+		BeforeEach(func() {
+			app = startApp("nora")
+			Eventually(app.session).Should(gbytes.Say("Server Started"))
+		})
+		AfterEach(func() {
+			stopApp(app)
+			Eventually(app.session).Should(gexec.Exit(0))
+			Eventually(app.session).Should(gbytes.Say("Server Shutdown"))
+		})
+		It("does dynamic compression for JSON", func() {
+			dynamicUrl := fmt.Sprintf("http://localhost:%d/healthcheck", app.port)
+			var header http.Header
+			//the app needs more than one request in order to do the compression
+			for i := 0; i < 2; i++ {
+				header = successfulRequest(dynamicUrl)
+			}
+			Expect(header["Content-Type"]).To(ContainElement("application/json; charset=utf-8"))
+			Expect(header["Content-Encoding"]).To(ContainElement("gzip"))
+			Expect(header["Content-Length"]).To(ContainElement("52"))
+			Expect(header["Vary"]).To(ContainElement("Accept-Encoding"))
+		})
+		It("does static compression for image", func() {
+			staticUrl := fmt.Sprintf("http://localhost:%d/Content/art.jpg", app.port)
+			var header http.Header
+			//the app needs more than one request in order to do the compression
+			for i := 0; i < 2; i++ {
+				header = successfulRequest(staticUrl)
+			}
+			Expect(header["Content-Type"]).To(ContainElement("image/jpeg"))
+			Expect(header["Content-Encoding"]).To(ContainElement("gzip"))
+			Expect(header["Content-Length"]).To(ContainElement("7630"))
+			Expect(header["Vary"]).To(ContainElement("Accept-Encoding"))
 		})
 	})
 
@@ -189,7 +226,7 @@ var _ = Describe("HWC", func() {
 				"VCAP_SERVICES={}",
 				"PORT=" + strconv.FormatInt(port, 10),
 			}
-			app = startAppWithEnv("nora", env)
+			app = startAppWithEnv("nora", env, false)
 			Eventually(app.session).Should(gbytes.Say("Server Started"))
 			app.port = port
 		})
@@ -317,6 +354,27 @@ var _ = Describe("HWC", func() {
 			Expect(string(output)).To(ContainSubstring("No matches found"))
 		})
 	})
+
+	Context("my app has troublesome stuff in web.config", func() {
+		var app hwcApp
+
+		BeforeEach(func() {
+			app = startAppWithEnv("nora", []string{}, true)
+			Eventually(app.session).Should(gbytes.Say("Server Started"))
+		})
+
+		AfterEach(func() {
+			stopApp(app)
+			Eventually(app.session).Should(gbytes.Say("Server Shutdown"))
+			Eventually(app.session).Should(gexec.Exit(0))
+		})
+
+		It("prints out a warning to the user regarding the bad web.config stuff", func() {
+			Eventually(app.session.Err).Should(gbytes.Say("Warning: <httpCompression> should not have any attributes but it has nastykey, anotherbadkey"))
+			Eventually(app.session.Err).Should(gbytes.Say("Warning: <httpCompression> should not have any child tags other than <staticTypes>" +
+				" and <dynamicTypes> but it has <scheme>"))
+		})
+	})
 })
 
 type hwcApp struct {
@@ -340,10 +398,10 @@ func stopApp(app hwcApp) {
 }
 
 func startApp(fixtureName string) hwcApp {
-	return startAppWithEnv(fixtureName, []string{})
+	return startAppWithEnv(fixtureName, []string{}, false)
 }
 
-func startAppWithEnv(fixtureName string, env []string) hwcApp {
+func startAppWithEnv(fixtureName string, env []string, badConfigtest bool) hwcApp {
 	cmd := exec.Command(hwcBinPath)
 
 	profileDir, err := ioutil.TempDir("", "hwcappprofile")
@@ -354,6 +412,11 @@ func startAppWithEnv(fixtureName string, env []string) hwcApp {
 	wd, err := os.Getwd()
 	Expect(err).ToNot(HaveOccurred())
 	Expect(copyDirectory(filepath.Join(wd, "fixtures", fixtureName), appDir)).To(Succeed())
+
+	if badConfigtest {
+		err := copyFile(filepath.Join(wd, "fixtures", "webconfigs", "Web.config.bad"), filepath.Join(appDir, "Web.config"))
+		Expect(err).NotTo(HaveOccurred())
+	}
 
 	port := newRandomPort()
 
@@ -423,6 +486,26 @@ func copyDirectory(srcDir, destDir string) error {
 		}
 	}
 
+	return nil
+}
+
+func copyFile(src, dst string) error {
+	destFile, err := os.Create(dst)
+	if err != nil {
+		return err
+	}
+	defer destFile.Close()
+
+	srcFile, err := os.Open(src)
+	if err != nil {
+		return err
+	}
+	defer srcFile.Close()
+
+	_, err = io.Copy(destFile, srcFile)
+	if err != nil {
+		return err
+	}
 	return nil
 }
 

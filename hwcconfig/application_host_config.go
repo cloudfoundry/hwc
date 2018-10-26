@@ -121,7 +121,7 @@ const applicationHostConfigTemplate = `<?xml version="1.0" encoding="UTF-8"?>
       <section name="fastCgi" allowDefinition="AppHostOnly" overrideModeDefault="Deny" />
       <section name="globalModules" allowDefinition="AppHostOnly" overrideModeDefault="Deny" />
       <section name="handlers" overrideModeDefault="Allow" />
-      <section name="httpCompression" allowDefinition="AppHostOnly" overrideModeDefault="Deny" />
+      <section name="httpCompression" overrideModeDefault="Allow" />
       <section name="httpErrors" overrideModeDefault="Allow" />
       <section name="httpLogging" overrideModeDefault="Deny" />
       <section name="httpProtocol" overrideModeDefault="Allow" />
