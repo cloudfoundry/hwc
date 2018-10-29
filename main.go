@@ -19,6 +19,7 @@ import (
 
 	"code.cloudfoundry.org/hwc/contextpath"
 	"code.cloudfoundry.org/hwc/hwcconfig"
+	"code.cloudfoundry.org/hwc/validator"
 	"code.cloudfoundry.org/hwc/webcore"
 )
 
@@ -70,6 +71,9 @@ func main() {
 	}
 
 	err, config := hwcconfig.New(port, rootPath, tmpPath, contextPath, uuid)
+	checkErr(err)
+
+	err = validator.ValidateWebConfig(filepath.Join(rootPath, "Web.config"), os.Stderr)
 	checkErr(err)
 
 	err, wc := webcore.New()
