@@ -3,13 +3,15 @@ package hwcconfig
 import (
 	"errors"
 	"fmt"
+	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
 	"text/template"
 )
 
-var globalModules = []map[string]string{
+//TOOD: refactor into object - make immutable
+var baselineNativeModules = [...]map[string]string{
 	{"Name": "UriCacheModule", "Image": `%windir%\System32\inetsrv\cachuri.dll`},
 	{"Name": "FileCacheModule", "Image": `%windir%\System32\inetsrv\cachfile.dll`},
 	{"Name": "TokenCacheModule", "Image": `%windir%\System32\inetsrv\cachtokn.dll`},
@@ -27,8 +29,6 @@ var globalModules = []map[string]string{
 	{"Name": "IsapiModule", "Image": `%windir%\System32\inetsrv\isapi.dll`},
 	{"Name": "IsapiFilterModule", "Image": `%windir%\System32\inetsrv\filter.dll`},
 	{"Name": "ConfigurationValidationModule", "Image": `%windir%\System32\inetsrv\validcfg.dll`},
-	// {"Name": "ManagedEngine64", "Image": `%windir%\Microsoft.NET\Framework64\v2.0.50727\webengine.dll`, "PreCondition": "integratedMode,runtimeVersionv2.0,bitness64"},
-	// {"Name": "ManagedEngine", "Image": `%windir%\Microsoft.NET\Framework\v2.0.50727\webengine.dll`, "PreCondition": "integratedMode,runtimeVersionv2.0,bitness32"},
 	{"Name": "ManagedEngineV4.0_32bit", "Image": `%windir%\Microsoft.NET\Framework\v4.0.30319\webengine4.dll`, "PreCondition": "integratedMode,runtimeVersionv4.0,bitness32"},
 	{"Name": "ManagedEngineV4.0_64bit", "Image": `%windir%\Microsoft.NET\Framework64\v4.0.30319\webengine4.dll`, "PreCondition": "integratedMode,runtimeVersionv4.0,bitness64"},
 	{"Name": "CustomLoggingModule", "Image": `%windir%\System32\inetsrv\logcust.dll`},
@@ -49,19 +49,40 @@ var globalModules = []map[string]string{
 func (c *HwcConfig) generateApplicationHostConfig() error {
 	missing := []string{}
 
-	// if os.Getenv("CUSTOMMODULES") is not empty, add values to globalModules
-	// CUSTOMMODULES format: "name,path;name,path"
-	customModules := os.Getenv("CUSTOMMODULES")
+	var userDefinedNativeModules []map[string]string
+
 	var modulesConf []map[string]string
-	if customModules != "" {
-		for _, module := range strings.Split(customModules, ";") {
-			m := strings.Split(module, ",")
-			globalModules = append(globalModules, map[string]string{"Name": m[0], "Image": m[1]})
-			modulesConf = append(modulesConf, map[string]string{"Name": m[0]})
+
+	imageDirectory := os.Getenv("HWC_NATIVE_MODULES")
+	if imageDirectory != "" {
+
+		directoryContents, err := ioutil.ReadDir(imageDirectory)
+		if err != nil {
+			return err
+		}
+
+		for _, subDirectoryFileInfo := range directoryContents {
+			name := subDirectoryFileInfo.Name()
+			subDirectoryPath := filepath.Join(imageDirectory, name)
+			subDirectoryContents, err := ioutil.ReadDir(subDirectoryPath)
+			if err != nil {
+				return err
+			}
+
+			for _, subDirectoryItem := range subDirectoryContents {
+				image := filepath.Join(subDirectoryPath, subDirectoryItem.Name())
+				module := map[string]string{"Name": name, "Image": image}
+				userDefinedNativeModules = append(userDefinedNativeModules, module)
+				modulesConf = append(modulesConf, map[string]string{"Name": name})
+			}
+		}
+
+		if len(modulesConf) == 0 {
+			return fmt.Errorf("HWC_NATIVE_MODULES does not match required directory structure. See hwc README for detailed instructions.")
 		}
 	}
 
-	for _, v := range globalModules {
+	for _, v := range baselineNativeModules {
 		imagePath := os.ExpandEnv(strings.Replace(v["Image"], `%windir%`, `${windir}`, -1))
 		_, err := os.Stat(imagePath)
 		if os.IsNotExist(err) {
@@ -80,7 +101,7 @@ func (c *HwcConfig) generateApplicationHostConfig() error {
 	rewritePath := filepath.Join(os.Getenv("WINDIR"), "system32", "inetsrv", "rewrite.dll")
 	_, err := os.Stat(rewritePath)
 	if err == nil {
-		globalModules = append(globalModules, map[string]string{"Name": "RewriteModule", "Image": `%windir%\system32\inetsrv\rewrite.dll`})
+		userDefinedNativeModules = append(userDefinedNativeModules, map[string]string{"Name": "RewriteModule", "Image": `%windir%\system32\inetsrv\rewrite.dll`})
 		rewrite = true
 	} else if !os.IsNotExist(err) {
 		return err
@@ -101,7 +122,7 @@ func (c *HwcConfig) generateApplicationHostConfig() error {
 
 	t := templateInput{
 		Config:        c,
-		GlobalModules: globalModules,
+		GlobalModules: append(baselineNativeModules[:], userDefinedNativeModules...),
 		ModulesConf:   modulesConf,
 		Rewrite:       rewrite,
 	}
