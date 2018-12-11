@@ -3,13 +3,15 @@ package hwcconfig
 import (
 	"errors"
 	"fmt"
+	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
 	"text/template"
 )
 
-var globalModules = []map[string]string{
+//TOOD: refactor into object - make immutable
+var baselineNativeModules = [...]map[string]string{
 	{"Name": "UriCacheModule", "Image": `%windir%\System32\inetsrv\cachuri.dll`},
 	{"Name": "FileCacheModule", "Image": `%windir%\System32\inetsrv\cachfile.dll`},
 	{"Name": "TokenCacheModule", "Image": `%windir%\System32\inetsrv\cachtokn.dll`},
@@ -49,19 +51,46 @@ var globalModules = []map[string]string{
 func (c *HwcConfig) generateApplicationHostConfig() error {
 	missing := []string{}
 
+	var userDefinedNativeModules []map[string]string
+
 	// if os.Getenv("CUSTOMMODULES") is not empty, add values to globalModules
 	// CUSTOMMODULES format: "name,path;name,path"
-	customModules := os.Getenv("CUSTOMMODULES")
+	// HWC_NATIVE_MODULES format: "parentPath1" -> name/whatever.dll
+	//customModules := os.Getenv("CUSTOMMODULES")
 	var modulesConf []map[string]string
-	if customModules != "" {
-		for _, module := range strings.Split(customModules, ";") {
-			m := strings.Split(module, ",")
-			globalModules = append(globalModules, map[string]string{"Name": m[0], "Image": m[1]})
-			modulesConf = append(modulesConf, map[string]string{"Name": m[0]})
+	//if customModules != "" {
+	//	for _, module := range strings.Split(customModules, ";") {
+	//		m := strings.Split(module, ",")
+	//		globalModules = append(globalModules, map[string]string{"Name": m[0], "Image": m[1]})
+	//		modulesConf = append(modulesConf, map[string]string{"Name": m[0]})
+	//	}
+	//}
+
+	imageDirectory := os.Getenv("HWC_NATIVE_MODULES")
+	if imageDirectory != "" {
+		// get the module name from the top level directory
+		// get the image name from any DLL in the directory
+		directoryContents, err := ioutil.ReadDir(imageDirectory)
+		if err != nil {
+			return err
+		}
+
+		for _, fileInfo := range directoryContents {
+			name := fileInfo.Name()
+			ddlDirectory := filepath.Join(imageDirectory, name)
+			dllName, err := ioutil.ReadDir(ddlDirectory)
+			if err != nil {
+				return err
+			}
+
+			image := filepath.Join(ddlDirectory, dllName[0].Name())
+			module := map[string]string{"Name": name, "Image": image}
+			userDefinedNativeModules = append(userDefinedNativeModules, module)
+			modulesConf = append(modulesConf, map[string]string{"Name": name})
 		}
 	}
 
-	for _, v := range globalModules {
+	for _, v := range baselineNativeModules {
 		imagePath := os.ExpandEnv(strings.Replace(v["Image"], `%windir%`, `${windir}`, -1))
 		_, err := os.Stat(imagePath)
 		if os.IsNotExist(err) {
@@ -80,7 +109,7 @@ func (c *HwcConfig) generateApplicationHostConfig() error {
 	rewritePath := filepath.Join(os.Getenv("WINDIR"), "system32", "inetsrv", "rewrite.dll")
 	_, err := os.Stat(rewritePath)
 	if err == nil {
-		globalModules = append(globalModules, map[string]string{"Name": "RewriteModule", "Image": `%windir%\system32\inetsrv\rewrite.dll`})
+		userDefinedNativeModules = append(userDefinedNativeModules, map[string]string{"Name": "RewriteModule", "Image": `%windir%\system32\inetsrv\rewrite.dll`})
 		rewrite = true
 	} else if !os.IsNotExist(err) {
 		return err
@@ -101,7 +130,7 @@ func (c *HwcConfig) generateApplicationHostConfig() error {
 
 	t := templateInput{
 		Config:        c,
-		GlobalModules: globalModules,
+		GlobalModules: append(baselineNativeModules[:], userDefinedNativeModules...),
 		ModulesConf:   modulesConf,
 		Rewrite:       rewrite,
 	}
