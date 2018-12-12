@@ -29,8 +29,6 @@ var baselineNativeModules = [...]map[string]string{
 	{"Name": "IsapiModule", "Image": `%windir%\System32\inetsrv\isapi.dll`},
 	{"Name": "IsapiFilterModule", "Image": `%windir%\System32\inetsrv\filter.dll`},
 	{"Name": "ConfigurationValidationModule", "Image": `%windir%\System32\inetsrv\validcfg.dll`},
-	// {"Name": "ManagedEngine64", "Image": `%windir%\Microsoft.NET\Framework64\v2.0.50727\webengine.dll`, "PreCondition": "integratedMode,runtimeVersionv2.0,bitness64"},
-	// {"Name": "ManagedEngine", "Image": `%windir%\Microsoft.NET\Framework\v2.0.50727\webengine.dll`, "PreCondition": "integratedMode,runtimeVersionv2.0,bitness32"},
 	{"Name": "ManagedEngineV4.0_32bit", "Image": `%windir%\Microsoft.NET\Framework\v4.0.30319\webengine4.dll`, "PreCondition": "integratedMode,runtimeVersionv4.0,bitness32"},
 	{"Name": "ManagedEngineV4.0_64bit", "Image": `%windir%\Microsoft.NET\Framework64\v4.0.30319\webengine4.dll`, "PreCondition": "integratedMode,runtimeVersionv4.0,bitness64"},
 	{"Name": "CustomLoggingModule", "Image": `%windir%\System32\inetsrv\logcust.dll`},
@@ -53,23 +51,15 @@ func (c *HwcConfig) generateApplicationHostConfig() error {
 
 	var userDefinedNativeModules []map[string]string
 
-	// if os.Getenv("CUSTOMMODULES") is not empty, add values to globalModules
-	// CUSTOMMODULES format: "name,path;name,path"
-	// HWC_NATIVE_MODULES format: "parentPath1" -> name/whatever.dll
-	//customModules := os.Getenv("CUSTOMMODULES")
 	var modulesConf []map[string]string
-	//if customModules != "" {
-	//	for _, module := range strings.Split(customModules, ";") {
-	//		m := strings.Split(module, ",")
-	//		globalModules = append(globalModules, map[string]string{"Name": m[0], "Image": m[1]})
-	//		modulesConf = append(modulesConf, map[string]string{"Name": m[0]})
-	//	}
-	//}
 
 	imageDirectory := os.Getenv("HWC_NATIVE_MODULES")
 	if imageDirectory != "" {
-		// get the module name from the top level directory
-		// get the image name from any DLL in the directory
+		_, directoryError := os.Stat(imageDirectory)
+		if os.IsNotExist(directoryError) {
+			return errors.New(fmt.Sprintf("Path \"%s\" does not exist", imageDirectory))
+		}
+
 		directoryContents, err := ioutil.ReadDir(imageDirectory)
 		if err != nil {
 			return err
@@ -83,10 +73,12 @@ func (c *HwcConfig) generateApplicationHostConfig() error {
 				return err
 			}
 
-			image := filepath.Join(ddlDirectory, dllName[0].Name())
-			module := map[string]string{"Name": name, "Image": image}
-			userDefinedNativeModules = append(userDefinedNativeModules, module)
-			modulesConf = append(modulesConf, map[string]string{"Name": name})
+			if len(dllName) > 0 {
+				image := filepath.Join(ddlDirectory, dllName[0].Name())
+				module := map[string]string{"Name": name, "Image": image}
+				userDefinedNativeModules = append(userDefinedNativeModules, module)
+				modulesConf = append(modulesConf, map[string]string{"Name": name})
+			}
 		}
 	}
 
