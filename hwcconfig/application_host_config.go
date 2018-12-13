@@ -97,15 +97,15 @@ func (c *HwcConfig) generateApplicationHostConfig() error {
 		return errors.New(fmt.Sprintf("Missing required DLLs:\n%s", strings.Join(missing, ",\n")))
 	}
 
-	rewrite := false
-	rewritePath := filepath.Join(os.Getenv("WINDIR"), "system32", "inetsrv", "rewrite.dll")
-	_, err := os.Stat(rewritePath)
-	if err == nil {
-		userDefinedNativeModules = append(userDefinedNativeModules, map[string]string{"Name": "RewriteModule", "Image": `%windir%\system32\inetsrv\rewrite.dll`})
-		rewrite = true
-	} else if !os.IsNotExist(err) {
-		return err
-	}
+	// rewrite := false
+	// rewritePath := filepath.Join(os.Getenv("WINDIR"), "system32", "inetsrv", "rewrite.dll")
+	// _, err := os.Stat(rewritePath)
+	// if err == nil {
+	// 	userDefinedNativeModules = append(userDefinedNativeModules, map[string]string{"Name": "RewriteModule", "Image": `%windir%\system32\inetsrv\rewrite.dll`})
+	// 	rewrite = true
+	// } else if !os.IsNotExist(err) {
+	// 	return err
+	// }
 
 	file, err := os.Create(c.ApplicationHostConfigPath)
 	if err != nil {
@@ -124,7 +124,7 @@ func (c *HwcConfig) generateApplicationHostConfig() error {
 		Config:        c,
 		GlobalModules: append(baselineNativeModules[:], userDefinedNativeModules...),
 		ModulesConf:   modulesConf,
-		Rewrite:       rewrite,
+		Rewrite:       false,
 	}
 
 	var tmpl = template.Must(template.New("applicationhost").Parse(applicationHostConfigTemplate))
@@ -200,7 +200,7 @@ const applicationHostConfigTemplate = `<?xml version="1.0" encoding="UTF-8"?>
         <section name="backup" overrideModeDefault="Deny" allowDefinition="MachineToApplication" />
       </sectionGroup>
       <section name="webSocket" overrideModeDefault="Deny" />
-			{{if .Rewrite}}
+		
 			<sectionGroup name="rewrite">
 				<section name="rules" overrideModeDefault="Allow" />
 				<section name="globalRules" overrideModeDefault="Deny" allowDefinition="AppHostOnly" />
@@ -209,7 +209,7 @@ const applicationHostConfigTemplate = `<?xml version="1.0" encoding="UTF-8"?>
 				<section name="rewriteMaps" overrideModeDefault="Allow" />
 				<section name="allowedServerVariables" overrideModeDefault="Deny" />
 			</sectionGroup>
-			{{end}}
+	
     </sectionGroup>
   </configSections>
 

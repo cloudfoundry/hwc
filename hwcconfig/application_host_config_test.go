@@ -140,10 +140,9 @@ var _ bool = Describe("ApplicationHostConfig", func() {
 				err = os.Setenv("HWC_NATIVE_MODULES", modulesDirectory)
 				Expect(err).ToNot(HaveOccurred())
 
-				// TODO: rename variables to describe intent
-				emptySubDirectoryPath := filepath.Join(modulesDirectory, "emptyDirectory")
+				emptyModuleDirectoryPath := filepath.Join(modulesDirectory, "emptyDirectory")
 
-				err = os.MkdirAll(emptySubDirectoryPath, 0777)
+				err = os.MkdirAll(emptyModuleDirectoryPath, 0777)
 				Expect(err).ToNot(HaveOccurred())
 
 				listenPort, rootPath, tmpPath, contextPath, uuid := basicDeps(workingDirectory)
