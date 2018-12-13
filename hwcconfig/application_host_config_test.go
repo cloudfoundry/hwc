@@ -14,10 +14,11 @@ import (
 var _ bool = Describe("ApplicationHostConfig", func() {
 	var (
 		workingDirectory string
-		tmpPath          string
-		rootPath         string
-		contextPath      string
 	)
+	// 	tmpPath          string
+	// 	rootPath         string
+	// 	contextPath      string
+	// )
 
 	var writeDllToPath = func(pathToDll1 string) {
 		var err error
@@ -27,14 +28,23 @@ var _ bool = Describe("ApplicationHostConfig", func() {
 		Expect(err).ToNot(HaveOccurred())
 	}
 
-	BeforeEach(func() {
-		var err error
-		workingDirectory, err = ioutil.TempDir("", "hwcconfig_test")
-		Expect(err).ToNot(HaveOccurred())
-
+	var basicDeps = func(workingDirectory string) (listenPort int, rootPath string, tmpPath string, contextPath string, uuid string) {
+		listenPort = 8080
 		rootPath = workingDirectory + "/rootPath"
 		tmpPath = workingDirectory + "/tmpPath"
 		contextPath = workingDirectory + "/contextPath"
+		uuid = "someuid12345"
+
+		// return "", rootPath, tmpPath, contextPath
+		return
+	}
+
+	BeforeEach(func() {
+		var err error
+
+		//use the test-friendly TempDir
+		workingDirectory, err = ioutil.TempDir("", "hwcconfig_test")
+		Expect(err).ToNot(HaveOccurred())
 	})
 
 	AfterEach(func() {
@@ -46,7 +56,9 @@ var _ bool = Describe("ApplicationHostConfig", func() {
 			It("creates default config file", func() {
 				var err error
 
-				err, hwcConfig := hwcconfig.New(8080, rootPath, tmpPath, contextPath, "someuid12345")
+				listenPort, rootPath, tmpPath, contextPath, uuid := basicDeps(workingDirectory)
+
+				err, hwcConfig := hwcconfig.New(listenPort, rootPath, tmpPath, contextPath, uuid)
 				_, err = os.Stat(hwcConfig.ApplicationHostConfigPath)
 				Expect(err).ToNot(HaveOccurred())
 			})
@@ -74,7 +86,9 @@ var _ bool = Describe("ApplicationHostConfig", func() {
 
 				writeDllToPath(pathToDll)
 
-				err, hwcConfig := hwcconfig.New(8080, rootPath, tmpPath, contextPath, "someuid12345")
+				listenPort, rootPath, tmpPath, contextPath, uuid := basicDeps(workingDirectory)
+
+				err, hwcConfig := hwcconfig.New(listenPort, rootPath, tmpPath, contextPath, uuid)
 				Expect(err).ToNot(HaveOccurred())
 				configFileContents, err := ioutil.ReadFile(hwcConfig.ApplicationHostConfigPath)
 				Expect(err).ToNot(HaveOccurred())
@@ -95,7 +109,9 @@ var _ bool = Describe("ApplicationHostConfig", func() {
 				pathToDll2 := filepath.Join(modulesDirectory, "anotherModule", "anotherModule.dll")
 				writeDllToPath(pathToDll2)
 
-				err, hwcConfig := hwcconfig.New(8080, rootPath, tmpPath, contextPath, "someuid12345")
+				listenPort, rootPath, tmpPath, contextPath, uuid := basicDeps(workingDirectory)
+
+				err, hwcConfig := hwcconfig.New(listenPort, rootPath, tmpPath, contextPath, uuid)
 				Expect(err).ToNot(HaveOccurred())
 				configFileContents, err := ioutil.ReadFile(hwcConfig.ApplicationHostConfigPath)
 				Expect(err).ToNot(HaveOccurred())
@@ -108,30 +124,65 @@ var _ bool = Describe("ApplicationHostConfig", func() {
 			})
 
 			It("returns error when user defined directory does NOT exist", func() {
-				envErr := os.Setenv("HWC_NATIVE_MODULES", filepath.Join("some", "nonexistent", "path"))
-				Expect(envErr).ToNot(HaveOccurred())
+				err := os.Setenv("HWC_NATIVE_MODULES", filepath.Join("some", "nonexistent", "path"))
+				Expect(err).ToNot(HaveOccurred())
 
-				hwcConfigErr, _ := hwcconfig.New(8080, rootPath, tmpPath, contextPath, "someuid12345")
+				listenPort, rootPath, tmpPath, contextPath, uuid := basicDeps(workingDirectory)
+
+				hwcConfigErr, _ := hwcconfig.New(listenPort, rootPath, tmpPath, contextPath, uuid)
 				Expect(hwcConfigErr).To(HaveOccurred())
 				Expect(hwcConfigErr).To(MatchError("Path \"some\\nonexistent\\path\" does not exist"))
 			})
 
 			It("ignores empty sub-directories in user defined path", func() {
-				envErr := os.Setenv("HWC_NATIVE_MODULES", modulesDirectory)
-				Expect(envErr).ToNot(HaveOccurred())
+				var err error
 
+				err = os.Setenv("HWC_NATIVE_MODULES", modulesDirectory)
+				Expect(err).ToNot(HaveOccurred())
+
+				// TODO: rename variables to describe intent
 				emptySubDirectoryPath := filepath.Join(modulesDirectory, "emptyDirectory")
 
-				directoryErr := os.MkdirAll(emptySubDirectoryPath, 0777)
-				Expect(directoryErr).ToNot(HaveOccurred())
+				err = os.MkdirAll(emptySubDirectoryPath, 0777)
+				Expect(err).ToNot(HaveOccurred())
 
-				err, hwcConfig := hwcconfig.New(8080, rootPath, tmpPath, contextPath, "someuid12345")
+				listenPort, rootPath, tmpPath, contextPath, uuid := basicDeps(workingDirectory)
+
+				err, hwcConfig := hwcconfig.New(listenPort, rootPath, tmpPath, contextPath, uuid)
 				Expect(err).ToNot(HaveOccurred())
 
 				configFileContents, err := ioutil.ReadFile(hwcConfig.ApplicationHostConfigPath)
 				Expect(err).ToNot(HaveOccurred())
 
 				Expect(string(configFileContents)).ToNot(ContainSubstring("emptyDirectory"))
+			})
+
+			It("appends symlinked modules to application host", func() {
+				var err error
+
+				err = os.Setenv("HWC_NATIVE_MODULES", modulesDirectory)
+				Expect(err).ToNot(HaveOccurred())
+
+				moduleDirectory := filepath.Join(modulesDirectory, "myLinkedModule")
+				err = os.MkdirAll(moduleDirectory, 0777)
+				Expect(err).ToNot(HaveOccurred())
+
+				symLinkSource := filepath.Join(workingDirectory, "sourceModule.dll")
+				writeDllToPath(symLinkSource)
+				linkedModule := filepath.Join(moduleDirectory, "linkModule.dll")
+				err = os.Symlink(symLinkSource, linkedModule)
+				Expect(err).ToNot(HaveOccurred())
+
+				listenPort, rootPath, tmpPath, contextPath, uuid := basicDeps(workingDirectory)
+
+				err, hwcConfig := hwcconfig.New(listenPort, rootPath, tmpPath, contextPath, uuid)
+				Expect(err).ToNot(HaveOccurred())
+
+				configFileContents, err := ioutil.ReadFile(hwcConfig.ApplicationHostConfigPath)
+				Expect(err).ToNot(HaveOccurred())
+
+				Expect(string(configFileContents)).To(ContainSubstring("<add name=\"myLinkedModule\" image=\"" + linkedModule + "\""))
+				Expect(string(configFileContents)).To(ContainSubstring("<add name=\"myLinkedModule\" lockItem=\"true\" />"))
 			})
 		})
 	})
