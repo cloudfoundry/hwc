@@ -78,8 +78,8 @@ var _ bool = Describe("ApplicationHostConfig", func() {
 				err = os.Setenv("HWC_NATIVE_MODULES", modulesDirectory)
 				Expect(err).ToNot(HaveOccurred())
 
-				pathToDll1 := filepath.Join(modulesDirectory, "exampleModule", "mymodule.dll")
-				createAllFiles(pathToDll1)
+				dllFilePath := filepath.Join(modulesDirectory, "exampleModule", "mymodule.dll")
+				createAllFiles(dllFilePath)
 
 				symLinkSource := filepath.Join(workingDirectory, "sourceModule.dll")
 				createAllFiles(symLinkSource)
@@ -98,15 +98,27 @@ var _ bool = Describe("ApplicationHostConfig", func() {
 				configFileContents, err := ioutil.ReadFile(hwcConfig.ApplicationHostConfigPath)
 				Expect(err).ToNot(HaveOccurred())
 
-				Expect(string(configFileContents)).To(ContainSubstring("<add name=\"exampleModule\" image=\"" + pathToDll1 + "\""))
+				Expect(string(configFileContents)).To(ContainSubstring("<add name=\"exampleModule\" image=\"" + dllFilePath + "\""))
 				Expect(string(configFileContents)).To(ContainSubstring("<add name=\"exampleModule\" lockItem=\"true\" />"))
 
 				Expect(string(configFileContents)).To(ContainSubstring("<add name=\"myLinkedModule\" image=\"" + linkFilePath + "\""))
 				Expect(string(configFileContents)).To(ContainSubstring("<add name=\"myLinkedModule\" lockItem=\"true\" />"))
 			})
 
-			It("tells user when env is provided but no dlls were added", func() {
+			It("returns error when user provided directory is empty", func() {
+				var err error
+				emptyModulesDirectory := filepath.Join(workingDirectory, "modules")
 
+				err = os.MkdirAll(emptyModulesDirectory, 0777)
+				Expect(err).ToNot(HaveOccurred())
+
+				err = os.Setenv("HWC_NATIVE_MODULES", emptyModulesDirectory)
+				Expect(err).ToNot(HaveOccurred())
+
+				listenPort, rootPath, tmpPath, contextPath, uuid := basicDeps(workingDirectory)
+				err, _ = hwcconfig.New(listenPort, rootPath, tmpPath, contextPath, uuid)
+				Expect(err).To(HaveOccurred())
+				Expect(err).To(MatchError("HWC_NATIVE_MODULES does not match required directory structure. See hwc README for detailed instructions."))
 			})
 		})
 	})

@@ -56,9 +56,9 @@ func (c *HwcConfig) generateApplicationHostConfig() error {
 	imageDirectory := os.Getenv("HWC_NATIVE_MODULES")
 	if imageDirectory != "" {
 
-		directoryContents, readDirErr := ioutil.ReadDir(imageDirectory)
-		if readDirErr != nil {
-			return readDirErr
+		directoryContents, err := ioutil.ReadDir(imageDirectory)
+		if err != nil {
+			return err
 		}
 
 		for _, subDirectoryFileInfo := range directoryContents {
@@ -75,6 +75,10 @@ func (c *HwcConfig) generateApplicationHostConfig() error {
 				userDefinedNativeModules = append(userDefinedNativeModules, module)
 				modulesConf = append(modulesConf, map[string]string{"Name": name})
 			}
+		}
+
+		if len(modulesConf) == 0 {
+			return fmt.Errorf("HWC_NATIVE_MODULES does not match required directory structure. See hwc README for detailed instructions.")
 		}
 	}
 
