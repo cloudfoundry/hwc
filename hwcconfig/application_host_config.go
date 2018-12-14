@@ -55,26 +55,22 @@ func (c *HwcConfig) generateApplicationHostConfig() error {
 
 	imageDirectory := os.Getenv("HWC_NATIVE_MODULES")
 	if imageDirectory != "" {
-		_, directoryError := os.Stat(imageDirectory)
-		if os.IsNotExist(directoryError) {
-			return errors.New(fmt.Sprintf("Path \"%s\" does not exist", imageDirectory))
+
+		directoryContents, readDirErr := ioutil.ReadDir(imageDirectory)
+		if readDirErr != nil {
+			return readDirErr
 		}
 
-		directoryContents, err := ioutil.ReadDir(imageDirectory)
-		if err != nil {
-			return err
-		}
-
-		for _, fileInfo := range directoryContents {
-			name := fileInfo.Name()
-			ddlDirectory := filepath.Join(imageDirectory, name)
-			dllName, err := ioutil.ReadDir(ddlDirectory)
+		for _, subDirectoryFileInfo := range directoryContents {
+			name := subDirectoryFileInfo.Name()
+			subDirectoryPath := filepath.Join(imageDirectory, name)
+			subDirectoryContents, err := ioutil.ReadDir(subDirectoryPath)
 			if err != nil {
 				return err
 			}
 
-			if len(dllName) > 0 {
-				image := filepath.Join(ddlDirectory, dllName[0].Name())
+			for _, subDirectoryItem := range subDirectoryContents {
+				image := filepath.Join(subDirectoryPath, subDirectoryItem.Name())
 				module := map[string]string{"Name": name, "Image": image}
 				userDefinedNativeModules = append(userDefinedNativeModules, module)
 				modulesConf = append(modulesConf, map[string]string{"Name": name})
