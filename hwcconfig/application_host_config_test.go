@@ -13,7 +13,7 @@ import (
 
 var _ bool = Describe("ApplicationHostConfig", func() {
 	var (
-		workingDirectory string
+		workingDirectoryPath string
 	)
 
 	var createAllFiles = func(targetFilePath string) {
@@ -37,89 +37,86 @@ var _ bool = Describe("ApplicationHostConfig", func() {
 	BeforeEach(func() {
 		var err error
 
-		//use the test-friendly TempDir
-		workingDirectory, err = ioutil.TempDir("", "hwcconfig_test")
+		workingDirectoryPath, err = ioutil.TempDir("", "hwcconfig_test")
 		Expect(err).ToNot(HaveOccurred())
 	})
 
 	AfterEach(func() {
-		_ = os.RemoveAll(workingDirectory)
+		_ = os.RemoveAll(workingDirectoryPath)
 	})
 
-	Describe("Generate config file", func() {
-		Context("Default config file", func() {
-			It("creates default config file", func() {
-				var err error
+	Context("With default params", func() {
+		It("creates default config file", func() {
+			var err error
 
-				listenPort, rootPath, tmpPath, contextPath, uuid := basicDeps(workingDirectory)
+			listenPort, rootPath, tmpPath, contextPath, uuid := basicDeps(workingDirectoryPath)
 
-				err, hwcConfig := hwcconfig.New(listenPort, rootPath, tmpPath, contextPath, uuid)
-				_, err = os.Stat(hwcConfig.ApplicationHostConfigPath)
-				Expect(err).ToNot(HaveOccurred())
-			})
+			err, hwcConfig := hwcconfig.New(listenPort, rootPath, tmpPath, contextPath, uuid)
+			_, err = os.Stat(hwcConfig.ApplicationHostConfigPath)
+			Expect(err).ToNot(HaveOccurred())
+		})
+	})
+
+	Context("When custom modules are specified", func() {
+		var (
+			modulesDirectoryPath string
+		)
+
+		BeforeEach(func() {
+			modulesDirectoryPath = filepath.Join(workingDirectoryPath, "modules", "hwc", "native-modules")
 		})
 
-		Context("Config file with custom modules", func() {
-			var (
-				modulesDirectory string
-			)
+		AfterEach(func() {
+			Expect(os.Unsetenv("HWC_NATIVE_MODULES")).To(Succeed())
+		})
 
-			BeforeEach(func() {
-				modulesDirectory = filepath.Join(workingDirectory, "modules", "hwc", "native-modules")
-			})
+		It("adds regular and linked DLLs to applicationHost.config", func() {
+			var err error
 
-			AfterEach(func() {
-				Expect(os.Unsetenv("HWC_NATIVE_MODULES")).To(Succeed())
-			})
+			err = os.Setenv("HWC_NATIVE_MODULES", modulesDirectoryPath)
+			Expect(err).ToNot(HaveOccurred())
 
-			It("adds dlls and symlinks to applicationHost.config", func() {
-				var err error
+			dllFilePath := filepath.Join(modulesDirectoryPath, "exampleModule", "mymodule.dll")
+			createAllFiles(dllFilePath)
 
-				err = os.Setenv("HWC_NATIVE_MODULES", modulesDirectory)
-				Expect(err).ToNot(HaveOccurred())
+			linkSourcePath := filepath.Join(workingDirectoryPath, "sourceModule.dll")
+			createAllFiles(linkSourcePath)
 
-				dllFilePath := filepath.Join(modulesDirectory, "exampleModule", "mymodule.dll")
-				createAllFiles(dllFilePath)
+			linkFilePath := filepath.Join(modulesDirectoryPath, "myLinkedModule", "linkModule.dll")
+			err = os.MkdirAll(filepath.Dir(linkFilePath), 0777)
+			Expect(err).ToNot(HaveOccurred())
 
-				symLinkSource := filepath.Join(workingDirectory, "sourceModule.dll")
-				createAllFiles(symLinkSource)
+			err = os.Symlink(linkSourcePath, linkFilePath)
+			Expect(err).ToNot(HaveOccurred())
 
-				linkFilePath := filepath.Join(modulesDirectory, "myLinkedModule", "linkModule.dll")
-				err = os.MkdirAll(filepath.Dir(linkFilePath), 0777)
-				Expect(err).ToNot(HaveOccurred())
+			listenPort, rootPath, tmpPath, contextPath, uuid := basicDeps(workingDirectoryPath)
 
-				err = os.Symlink(symLinkSource, linkFilePath)
-				Expect(err).ToNot(HaveOccurred())
+			err, hwcConfig := hwcconfig.New(listenPort, rootPath, tmpPath, contextPath, uuid)
+			Expect(err).ToNot(HaveOccurred())
+			configFileContents, err := ioutil.ReadFile(hwcConfig.ApplicationHostConfigPath)
+			Expect(err).ToNot(HaveOccurred())
 
-				listenPort, rootPath, tmpPath, contextPath, uuid := basicDeps(workingDirectory)
+			Expect(string(configFileContents)).To(ContainSubstring("<add name=\"exampleModule\" image=\"" + dllFilePath + "\""))
+			Expect(string(configFileContents)).To(ContainSubstring("<add name=\"exampleModule\" lockItem=\"true\" />"))
 
-				err, hwcConfig := hwcconfig.New(listenPort, rootPath, tmpPath, contextPath, uuid)
-				Expect(err).ToNot(HaveOccurred())
-				configFileContents, err := ioutil.ReadFile(hwcConfig.ApplicationHostConfigPath)
-				Expect(err).ToNot(HaveOccurred())
+			Expect(string(configFileContents)).To(ContainSubstring("<add name=\"myLinkedModule\" image=\"" + linkFilePath + "\""))
+			Expect(string(configFileContents)).To(ContainSubstring("<add name=\"myLinkedModule\" lockItem=\"true\" />"))
+		})
 
-				Expect(string(configFileContents)).To(ContainSubstring("<add name=\"exampleModule\" image=\"" + dllFilePath + "\""))
-				Expect(string(configFileContents)).To(ContainSubstring("<add name=\"exampleModule\" lockItem=\"true\" />"))
+		It("returns error when user provided directory is empty", func() {
+			var err error
+			emptyModulesDirectoryPath := filepath.Join(workingDirectoryPath, "modules")
 
-				Expect(string(configFileContents)).To(ContainSubstring("<add name=\"myLinkedModule\" image=\"" + linkFilePath + "\""))
-				Expect(string(configFileContents)).To(ContainSubstring("<add name=\"myLinkedModule\" lockItem=\"true\" />"))
-			})
+			err = os.MkdirAll(emptyModulesDirectoryPath, 0777)
+			Expect(err).ToNot(HaveOccurred())
 
-			It("returns error when user provided directory is empty", func() {
-				var err error
-				emptyModulesDirectory := filepath.Join(workingDirectory, "modules")
+			err = os.Setenv("HWC_NATIVE_MODULES", emptyModulesDirectoryPath)
+			Expect(err).ToNot(HaveOccurred())
 
-				err = os.MkdirAll(emptyModulesDirectory, 0777)
-				Expect(err).ToNot(HaveOccurred())
-
-				err = os.Setenv("HWC_NATIVE_MODULES", emptyModulesDirectory)
-				Expect(err).ToNot(HaveOccurred())
-
-				listenPort, rootPath, tmpPath, contextPath, uuid := basicDeps(workingDirectory)
-				err, _ = hwcconfig.New(listenPort, rootPath, tmpPath, contextPath, uuid)
-				Expect(err).To(HaveOccurred())
-				Expect(err).To(MatchError("HWC_NATIVE_MODULES does not match required directory structure. See hwc README for detailed instructions."))
-			})
+			listenPort, rootPath, tmpPath, contextPath, uuid := basicDeps(workingDirectoryPath)
+			err, _ = hwcconfig.New(listenPort, rootPath, tmpPath, contextPath, uuid)
+			Expect(err).To(HaveOccurred())
+			Expect(err).To(MatchError("HWC_NATIVE_MODULES does not match required directory structure. See hwc README for detailed instructions."))
 		})
 	})
 })
