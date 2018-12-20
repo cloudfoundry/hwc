@@ -1,8 +1,9 @@
-if (-not (Test-Path env:GOPATH)) {
-  Write-Output 'GOPATH environment variable must be set before running build!'
-  exit 1
-}
+# if (-not (Test-Path env:GOPATH)) {
+#   Write-Output 'GOPATH environment variable must be set before running build!'
+#   exit 1
+# }
 
+Write-Output "Building HWC"
 New-Item -path "$PWD/hwc-rel" -type directory -force
 $env:CGO_ENABLED=1
 $env:GO_EXTLINK_ENABLED=1
