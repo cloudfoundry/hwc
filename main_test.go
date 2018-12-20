@@ -43,18 +43,6 @@ var _ = Describe("HWC", func() {
 	})
 
 	Context("Given that I am missing a required .dll", func() {
-		var tmpDir string
-
-		BeforeEach(func() {
-			var err error
-			tmpDir, err = ioutil.TempDir("", "hwcwindir")
-			Expect(err).NotTo(HaveOccurred())
-		})
-
-		AfterEach(func() {
-			Expect(os.RemoveAll(tmpDir)).To(Succeed())
-		})
-
 		It("errors", func() {
 			app := startAppWithEnv("nora", []string{"WINDIR="}, false)
 			Eventually(app.session).Should(gexec.Exit(1))
