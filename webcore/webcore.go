@@ -34,13 +34,16 @@ func (w *WebCore) Activate(appHostConfigPath, rootWebConfigPath, instanceName st
 		}
 
 		var nargs uintptr = 3
-		_, _, exitCode := syscall.Syscall(uintptr(webCoreActivate),
+		r1, _, exitCode := syscall.Syscall(uintptr(webCoreActivate),
 			nargs,
 			uintptr(unsafe.Pointer(syscall.StringToUTF16Ptr(appHostConfigPath))),
 			uintptr(unsafe.Pointer(syscall.StringToUTF16Ptr(rootWebConfigPath))),
 			uintptr(unsafe.Pointer(syscall.StringToUTF16Ptr(instanceName))))
 		if exitCode != 0 {
 			return fmt.Errorf("WebCoreActivate returned exit code: %d", exitCode)
+		}
+		if r1 != 0 {
+			return fmt.Errorf("HWC Failed to start: return code: 0x%02x", r1)
 		}
 
 		fmt.Printf("Server Started for %+v\n", instanceName)

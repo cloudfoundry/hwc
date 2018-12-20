@@ -63,6 +63,36 @@ var _ = Describe("HWC", func() {
 		})
 	})
 
+	Context("Given native module environment variable is set", func() {
+		var tmpDir string
+
+		BeforeEach(func() {
+			var err error
+
+			tmpDir, err = ioutil.TempDir("", "modulesDir")
+			Expect(err).NotTo(HaveOccurred())
+
+			dllPath := filepath.Join(tmpDir, "SomeModule", "module.html")
+			err = os.MkdirAll(filepath.Dir(dllPath), 0777)
+			Expect(err).ToNot(HaveOccurred())
+
+			err = ioutil.WriteFile(dllPath, []byte{}, 0777)
+			Expect(err).ToNot(HaveOccurred())
+		})
+
+		AfterEach(func() {
+			Expect(os.RemoveAll(tmpDir)).To(Succeed())
+		})
+
+		It("exits with an error when the module directory contains an invalid DLL", func() {
+			app := startAppWithEnv("nora", []string{fmt.Sprintf("HWC_NATIVE_MODULES=%s", tmpDir)}, false)
+			Eventually(app.session).Should(gexec.Exit(1))
+			Eventually(app.session).Should(gbytes.Say("HWC loading native module: .*module.html"))
+			Eventually(app.session.Err).Should(gbytes.Say("HWC Failed to start: return code:"))
+			stopApp(app)
+		})
+	})
+
 	Context("Given that I have http compression", func() {
 		var app hwcApp
 

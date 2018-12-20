@@ -74,6 +74,7 @@ func (c *HwcConfig) generateApplicationHostConfig() error {
 				module := map[string]string{"Name": name, "Image": image}
 				userDefinedNativeModules = append(userDefinedNativeModules, module)
 				modulesConf = append(modulesConf, map[string]string{"Name": name})
+				fmt.Printf("HWC loading native module: %s\n", image)
 			}
 		}
 
