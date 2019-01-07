@@ -59,7 +59,7 @@ Install ginkgo:
 go get github.com/onsi/ginkgo/ginkgo
 ```
 
-Execute the tests:
+Execute the tests: (from an administrator console)
 ```
 & "$env:GOPATH\bin\ginkgo.exe" -r -race
 ```
