@@ -208,7 +208,7 @@ const applicationHostConfigTemplate = `<?xml version="1.0" encoding="UTF-8"?>
 				<section name="outboundRules" overrideModeDefault="Allow" />
 				<section name="providers" overrideModeDefault="Allow" />
 				<section name="rewriteMaps" overrideModeDefault="Allow" />
-				<section name="allowedServerVariables" overrideModeDefault="Deny" />
+				<section name="allowedServerVariables" overrideModeDefault="Allow" />
 			</sectionGroup>
 			{{end}}
     </sectionGroup>
