@@ -150,7 +150,7 @@ const applicationHostConfigTemplate = `<?xml version="1.0" encoding="UTF-8"?>
       <section name="webLimits" allowDefinition="AppHostOnly" overrideModeDefault="Deny" />
     </sectionGroup>
     <sectionGroup name="system.webServer">
-      <section name="asp" overrideModeDefault="Deny" />
+      <section name="asp" overrideModeDefault="Allow" />
       <section name="caching" overrideModeDefault="Allow" />
       <section name="cgi" overrideModeDefault="Deny" />
       <section name="defaultDocument" overrideModeDefault="Allow" />
