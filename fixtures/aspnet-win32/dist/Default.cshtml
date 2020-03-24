@@ -1,0 +1,52 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+    <title></title>
+    <style>
+        body {
+            font-family: Verdana, Geneva, Tahoma, sans-serif;
+            font-size: 13pt;
+        }
+
+        li {
+            list-style: none;
+            text-indent: each-line;
+            margin: 4px 15px;
+        }
+
+        .grid-container {
+            display: grid;
+            /*grid-template: auto auto auto;*/
+            grid-template-columns: max-content auto;
+            grid-gap: 3px;
+            padding: 3px;
+            background-color: #2196F3;
+        }
+
+        .col {
+            padding: 20px;
+            background-color: rgba(255, 255, 255, 0.8);
+        }
+    </style>
+</head>
+<body>
+
+    @{
+        // Load library wrapper, get version for x86 and x64
+        var versionx86 = NativeDll.VersionLibraryWrapper.Createx86().GetVersion();
+        var versionx64 = NativeDll.VersionLibraryWrapper.Createx64().GetVersion();
+    }
+
+    <div class="grid-container">
+        <div class="col">Server Time</div>
+        <div class="col">@(DateTime.Now.ToLocalTime().ToString("yyyy-MMM-dd HH:mm:ss tt \"GMT\"zzz"))</div>
+        <div class="col">Server Platform Is64BitProcess</div>
+        <div class="col">@(Environment.Is64BitProcess)</div>
+        <div class="col">Native call Win32</div>
+        <div class="col">@versionx86</div>
+        <div class="col">Native call x64</div>
+        <div class="col">@versionx64</div>
+    </div>
+
+</body>
+</html>
