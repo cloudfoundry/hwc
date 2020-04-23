@@ -39,6 +39,9 @@ func main() {
 	flag.Parse()
 
 	// spawn 32bit process
+	// 2 options to trigger hwc in 32bit mode
+	//   1. execute hwc.exe -enable32bit
+	//   2. buildpack to choose hwc_x86.exe in final stage (removes the need for this flag)
 	if enable32bit && runtime.GOARCH != "386" {
 		hwc86Path, err := filepath.Abs(filepath.Join(filepath.Dir(os.Args[0]), "hwc_x86.exe"))
 		checkErr(err)
