@@ -10,6 +10,15 @@ using System.Web;
 
 namespace NativeDll
 {
+
+    public static class Logger
+    {
+        public static void Info(string message)
+        {
+            Console.WriteLine($"-----> {message}");
+        }
+    }
+
     /// <summary>
     /// A peek into Win32 DLLs
     /// </summary>
@@ -38,7 +47,7 @@ namespace NativeDll
             var dllPath = System.IO.Path.GetFullPath(
                 HttpContext.Current.Server.MapPath($@"bin\lib\{prefix}\{dllFilename}"));
 
-            Debug.WriteLine($"{dllPath} was found({File.Exists(dllPath)})");
+            Logger.Info($"Test File.Exists({dllPath}) resulted in {File.Exists(dllPath)}");
 
             return dllPath;
         }
@@ -105,7 +114,13 @@ namespace NativeDll
             _dllhandle = NativeLibrary.LoadLibrary(libPath);
 
             // Handle error loading
-            if (IntPtr.Zero == _dllhandle) { return; }
+            if (IntPtr.Zero == _dllhandle)
+            {
+                // Get the last error and display it.
+                int win32error = Marshal.GetLastWin32Error();
+                Logger.Info($"Unable to get handle on {libPath}. Win32 error {win32error}");
+                return;
+            }
 
             DelegateGetPlatformMessage();
         }
@@ -121,6 +136,11 @@ namespace NativeDll
                 _getversion = (GetVersionDelegate)Marshal.GetDelegateForFunctionPointer(
                     get_version_handle,
                     typeof(GetVersionDelegate));
+            }
+            else
+            {
+                int win32error = Marshal.GetLastWin32Error();
+                Logger.Info($"Unable to get handle on GetProcAddress for GetPlatformMessage. Win32 error {win32error}");
             }
         }
 
