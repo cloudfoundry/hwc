@@ -9,8 +9,10 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"os/exec"
 	"os/signal"
 	"path/filepath"
+	"runtime"
 	_ "runtime/cgo"
 	"strconv"
 	"syscall"
@@ -23,14 +25,35 @@ import (
 	"code.cloudfoundry.org/hwc/webcore"
 )
 
-var appRootPath string
+var (
+	appRootPath string
+	enable32bit bool
+)
 
 func init() {
 	flag.StringVar(&appRootPath, "appRootPath", ".", "app web root path")
+	flag.BoolVar(&enable32bit, "enable32bit", false, "enable 32Bit App On Win64")
 }
 
 func main() {
 	flag.Parse()
+
+	// spawn 32bit process
+	// 2 options to trigger hwc in 32bit mode
+	//   1. execute hwc.exe -enable32bit
+	//   2. buildpack to choose hwc_x86.exe in final stage (removes the need for this flag)
+	if enable32bit && runtime.GOARCH != "386" {
+		hwc86Path, err := filepath.Abs(filepath.Join(filepath.Dir(os.Args[0]), "hwc_x86.exe"))
+		checkErr(err)
+
+		hwc86cmd := exec.Command(hwc86Path, "-appRootPath", appRootPath)
+		hwc86cmd.Stdout = os.Stdout
+		hwc86cmd.Stderr = os.Stderr
+		err = hwc86cmd.Run()
+		checkErr(err)
+
+		os.Exit(0)
+	}
 
 	if os.Getenv("PORT") == "" {
 		checkErr(errors.New("Missing PORT environment variable"))
