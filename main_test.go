@@ -89,11 +89,11 @@ var _ = Describe("HWC", func() {
 			Eventually(app.session).Should(gbytes.Say("Server Started"))
 		})
 
-		AfterEach(func() {
-			stopApp(app)
-			Eventually(app.session).Should(gexec.Exit(0))
-			Eventually(app.session).Should(gbytes.Say("Server Shutdown"))
-		})
+		//AfterEach(func() {
+		//	stopApp(app)
+		//	Eventually(app.session).Should(gexec.Exit(0))
+		//	Eventually(app.session).Should(gbytes.Say("Server Shutdown"))
+		//})
 
 		It("does static compression", func() {
 			staticUrl := fmt.Sprintf("http://localhost:%d/Content/bootstrap.css", app.port)
