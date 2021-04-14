@@ -96,7 +96,7 @@ var _ = Describe("HWC", func() {
 		})
 
 		It("does static compression", func() {
-			staticUrl := fmt.Sprintf("https://localhost:%d/Content/bootstrap.css", app.port)
+			staticUrl := fmt.Sprintf("http://localhost:%d/Content/bootstrap.css", app.port)
 			var header http.Header
 
 			//the app needs more than one request in order to do the compression
