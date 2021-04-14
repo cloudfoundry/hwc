@@ -8,8 +8,6 @@ Install-WindowsFeature Web-WHC
 Install-WindowsFeature Web-ASP
 Install-WindowsFeature Web-ASP-Net45
 
-cd hwc
-
 Write-Host "Installing Ginkgo"
 go.exe get github.com/onsi/ginkgo/ginkgo
 if ($LastExitCode -ne 0) {
