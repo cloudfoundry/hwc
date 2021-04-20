@@ -13,7 +13,7 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - name: Run Tests
-        shell: bash
+        shell: powershell
         run: |
           Set-ExecutionPolicy Bypass
           docker build -t hwc-test -f .github/workflows/windows-container/Dockerfile .
