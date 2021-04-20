@@ -12,5 +12,5 @@ jobs:
     runs-on: windows-latest
     steps:
       - uses: ./.github/workflows/actions/windows-container
-      - name: Run Windows Tests
-      - id: windows-test
+        name: Run Windows Tests
+        id: windows-test
