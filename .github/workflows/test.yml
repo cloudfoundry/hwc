@@ -16,4 +16,5 @@ jobs:
         shell: powershell
         run: |
           Set-ExecutionPolicy Bypass
-          docker build -t hwc-test -f .github/workflows/windows-container/Dockerfile .
+          docker build -t hwc-test .
+          docker run hwc-test:latest
