@@ -1,0 +1,16 @@
+name: Tests
+on:
+  push:
+    branches:
+      - migrate-pipelines
+    paths-ignore: [ 'README.md' ]
+jobs:
+  test-windows:
+    runs-on: windows-latest
+    container: golang:1.16.3-windowsservercore-1809
+    steps:
+      - uses: actions/checkout@v2
+      - name: Run Tests
+        shell: powershell
+        run: |
+          ./scripts/run_test.ps1
