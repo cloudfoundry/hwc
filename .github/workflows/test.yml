@@ -11,9 +11,6 @@ jobs:
   test-windows:
     runs-on: windows-latest
     steps:
-      - uses: actions/checkout@v2
-      - name: Run Tests
-        shell: pwsh
-        run: |
-          Set-ExecutionPolicy Bypass
-          scripts/run_test.ps1
+      - uses: ./.github/workflows/actions/windows-container
+      - name: Run Windows Tests
+      - id: windows-test
