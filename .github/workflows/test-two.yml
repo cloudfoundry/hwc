@@ -1,9 +1,10 @@
 name: Test 2
 on:
-  push:
-    branches:
-      - migrate-pipelines
-    paths-ignore: [ 'README.md' ]
+  workflow_dispatch:
+#  push:
+#    branches:
+#      - migrate-pipelines
+#    paths-ignore: [ 'README.md' ]
 jobs:
   test-windows:
     runs-on: windows-latest
