@@ -1,4 +1,4 @@
-name: Tests
+name: Test 2
 on:
   push:
     branches:
@@ -7,7 +7,6 @@ on:
 jobs:
   test-windows:
     runs-on: windows-latest
-    container: golang:1.16.3-windowsservercore-1809
     steps:
       - uses: actions/checkout@v2
       - name: Run Tests
