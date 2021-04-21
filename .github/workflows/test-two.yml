@@ -12,4 +12,4 @@ jobs:
       - name: Run Tests
         shell: powershell
         run: |
-          ./scripts/run_test.ps1
+          docker run -t mcr.microsoft.com/windows/servercore:ltsc2019 powershell -command "echo hello"
