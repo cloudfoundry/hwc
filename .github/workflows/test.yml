@@ -31,6 +31,8 @@ jobs:
           cd ${env:GOPATH}\src\github.com\docker\cli
           powershell -File .\scripts\make.ps1 -Binary
           move .\build\docker.exe ${env:GOPATH}\bin\docker.exe
+      - name: Setup tmate session
+        uses: mxschmitt/action-tmate@v3
       - name: Run Tests
         shell: pwsh
         run: |
