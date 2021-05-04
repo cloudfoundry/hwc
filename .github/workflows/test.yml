@@ -16,26 +16,16 @@ jobs:
         uses: actions/setup-go@v2
         with:
           go-version: '1.15'
-      - name: BUGFIX - Upgrade Docker CLI if 20.10.0
-        shell: powershell
-        env:
-          DOCKER_VERSION: 20.10.6
-        run: |
-          $dockerVersion=(docker version -f '{{.Client.Version}}')
-          if ($dockerVersion -ne "20.10.0") {
-            echo Newer docker version has been released: $dockerVersion
-            echo Remove this step if greater than: ${env:DOCKER_VERSION}
-          }
-          $env:GOPATH="$env:USERPROFILE\go"
-          git clone -q --branch=v${env:DOCKER_VERSION} --single-branch https://github.com/docker/cli.git ${env:GOPATH}\src\github.com\docker\cli
-          cd ${env:GOPATH}\src\github.com\docker\cli
-          powershell -File .\scripts\make.ps1 -Binary
-          move .\build\docker.exe ${env:GOPATH}\bin\docker.exe
       - name: Setup tmate session
         uses: mxschmitt/action-tmate@v3
       - name: Run Tests
         shell: pwsh
         run: |
           Set-ExecutionPolicy Bypass
+          docker rmi mcr.microsoft.com/dotnet/framework/aspnet:4.8-windowsservercore-ltsc2019
+          docker rmi mcr.microsoft.com/dotnet/framework/runtime:4.8-windowsservercore-ltsc2019
+          docker rmi mcr.microsoft.com/dotnet/framework/sdk:4.8-windowsservercore-ltsc2019
+          docker rmi mcr.microsoft.com/windows/nanoserver:1809
+          docker rmi mcr.microsoft.com/windows/servercore:ltsc2019
           docker build -t hwc-test .
           docker run hwc-test:latest
