@@ -36,4 +36,4 @@ jobs:
         run: |
           Set-ExecutionPolicy Bypass
           docker build -t hwc-test .
-          docker run --rm -it hwc-test:latest
+          docker run hwc-test:latest
