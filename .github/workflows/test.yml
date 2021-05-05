@@ -17,10 +17,8 @@ jobs:
           go version
       - name: Set up go
         uses: actions/setup-go@v2
+        with:
+          go-version: '^1.16'
       - name: Tet go version after
         run: |
           go version
-      - uses: actions/setup-go@v2
-        with:
-          go-version: 'latest' # The Go version to download (if necessary) and use.
-      - run: go version
