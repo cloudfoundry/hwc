@@ -23,6 +23,8 @@ jobs:
           go mod edit -go=$(go version | sed -n 's/^.*go\([0-9]*.[0-9]*\).*$/\1/p')
           if [[ -n "$(git status --short)" ]]; then
             go mod tidy
+            git config --global user.email "cf-buildpacks-eng@pivotal.io"
+            git config --global user.name "CF Buildpacks Team CI Server"
             git add .
             git commit --message "Upgrade go version"
             echo "Updated go version in develop"
