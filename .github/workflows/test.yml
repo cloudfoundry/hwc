@@ -12,13 +12,18 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
-      - name: Test go version before
-        run: |
-          go version
+        with:
+          ref: develop
       - name: Set up go
         uses: actions/setup-go@v2
         with:
           go-version: '^1'
-      - name: Test go version after
+      - name: Run go mod edit
         run: |
-          go version
+          go mod edit -go=$(go version | sed -n 's/^.*go\([0-9]*.[0-9]*\).*$/\1/p')
+          if [[ -n "$(git status --short ]]; then
+            go mod tidy
+            git add .
+            git commit --message "Upgrade go version"
+            echo "Updated go version in develop"
+          fi
