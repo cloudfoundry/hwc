@@ -9,12 +9,18 @@ on:
   workflow_dispatch:
 jobs:
   test-windows:
-    runs-on: windows-latest
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
-      - name: Run Tests
-        shell: pwsh
+      - name: Test go version before
         run: |
-          Set-ExecutionPolicy Bypass
-          docker build -t hwc-test .
-          docker run hwc-test:latest
+          go version
+      - name: Set up go
+        uses: actions/setup-go@v2
+      - name: Tet go version after
+        run: |
+          go version
+      - uses: actions/setup-go@v2
+        with:
+          go-version: 'latest' # The Go version to download (if necessary) and use.
+      - run: go version
