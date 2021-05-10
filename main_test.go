@@ -114,14 +114,16 @@ var _ = Describe("HWC", func() {
 			Expect(header["Content-Length"]).To(ContainElement("22748"))
 		})
 
-		It("does dynamic compression", func() {
+		FIt("does dynamic compression", func() {
 			dynamicUrl := fmt.Sprintf("http://localhost:%d/Content/css", app.port)
+			fmt.Printf("dynamic URL: %s\n", dynamicUrl)
 			var header http.Header
 
 			//the app needs more than one request in order to do the compression
 			for i := 0; i < 2; i++ {
 				header = successfulRequest(dynamicUrl)
 			}
+			fmt.Println(header)
 			Expect(header["Content-Encoding"]).To(ContainElement("gzip"))
 			Expect(header["Vary"]).To(ContainElement("User-Agent,Accept-Encoding"))
 			Expect(header["Content-Length"]).To(ContainElement("23434"))
