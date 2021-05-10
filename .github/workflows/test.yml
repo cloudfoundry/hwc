@@ -1,32 +1,18 @@
-name: Tests
+name: Test No Docker
 on:
   push:
     branches:
-      - master
-      - migrate-pipelines
+      - mp-tests
     paths-ignore: [ 'README.md' ]
 
   workflow_dispatch:
 jobs:
-  test-windows:
-    runs-on: ubuntu-latest
+  run-tests:
+    runs-on: windows-latest
     steps:
       - uses: actions/checkout@v2
-        with:
-          ref: develop
-      - name: Set up go
-        uses: actions/setup-go@v2
-        with:
-          go-version: '^1'
-      - name: Run go mod edit
+      - name: Run Tests
+        shell: pwsh
         run: |
-          go mod edit -go=$(go version | sed -n 's/^.*go\([0-9]*.[0-9]*\).*$/\1/p')
-          if [[ -n "$(git status --short)" ]]; then
-            go mod tidy
-            git config --global user.email "cf-buildpacks-eng@pivotal.io"
-            git config --global user.name "CF Buildpacks Team CI Server"
-            git add .
-            git commit --message "Upgrade go version"
-            echo "Updated go version in develop"
-            git push
-          fi
+          Set-ExecutionPolicy Bypass
+          scripts/run_test.ps1
