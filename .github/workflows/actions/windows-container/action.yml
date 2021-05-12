@@ -1,5 +1,0 @@
-name: 'Windows Test'
-description: 'Runs hwc test on windows container'
-runs:
-  using: 'docker'
-  image: 'Dockerfile'

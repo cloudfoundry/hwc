@@ -1,14 +1,14 @@
-name: Tests
+name: Update Go Version
 on:
   push:
     branches:
-      - master
       - migrate-pipelines
     paths-ignore: [ 'README.md' ]
-
+  schedule:
+    - cron: 0 0 * * 1
   workflow_dispatch:
 jobs:
-  test-windows:
+  update:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
