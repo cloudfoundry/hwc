@@ -52,30 +52,40 @@ var _ = Describe("HWC", func() {
 	})
 
 	Context("Given native module environment variable is set", func() {
-		var tmpDir string
+		var someDir, otherDir string
 
 		BeforeEach(func() {
 			var err error
 
-			tmpDir, err = ioutil.TempDir("", "modulesDir")
+			someDir, err = ioutil.TempDir("", "some-modules-dir")
 			Expect(err).NotTo(HaveOccurred())
 
-			dllPath := filepath.Join(tmpDir, "SomeModule", "module.html")
-			err = os.MkdirAll(filepath.Dir(dllPath), 0777)
+			err = os.MkdirAll(filepath.Join(someDir, "SomeModule"), os.ModePerm)
+			Expect(err).NotTo(HaveOccurred())
+
+			err = ioutil.WriteFile(filepath.Join(someDir, "SomeModule", "some-module.html"), nil, 0777)
 			Expect(err).ToNot(HaveOccurred())
 
-			err = ioutil.WriteFile(dllPath, []byte{}, 0777)
+			otherDir, err = ioutil.TempDir("", "other-modules-dir")
+			Expect(err).NotTo(HaveOccurred())
+
+			err = os.MkdirAll(filepath.Join(otherDir, "OtherModule"), os.ModePerm)
+			Expect(err).NotTo(HaveOccurred())
+
+			err = ioutil.WriteFile(filepath.Join(otherDir, "OtherModule", "other-module.html"), nil, 0777)
 			Expect(err).ToNot(HaveOccurred())
 		})
 
 		AfterEach(func() {
-			Expect(os.RemoveAll(tmpDir)).To(Succeed())
+			Expect(os.RemoveAll(someDir)).To(Succeed())
+			Expect(os.RemoveAll(otherDir)).To(Succeed())
 		})
 
 		It("exits with an error when the module directory contains an invalid DLL", func() {
-			app := startAppWithEnv("nora", []string{fmt.Sprintf("HWC_NATIVE_MODULES=%s", tmpDir)}, false)
+			app := startAppWithEnv("nora", []string{fmt.Sprintf("HWC_NATIVE_MODULES=%s;%s", someDir, otherDir)}, false)
 			Eventually(app.session).Should(gexec.Exit(1))
-			Eventually(app.session).Should(gbytes.Say("HWC loading native module: .*module.html"))
+			Eventually(app.session).Should(gbytes.Say("HWC loading native module: .*some-module.html"))
+			Eventually(app.session).Should(gbytes.Say("HWC loading native module: .*other-module.html"))
 			Eventually(app.session.Err).Should(gbytes.Say("HWC Failed to start: return code:"))
 			stopApp(app)
 		})

@@ -53,8 +53,7 @@ func (c *HwcConfig) generateApplicationHostConfig() error {
 
 	var modulesConf []map[string]string
 
-	imageDirectory := os.Getenv("HWC_NATIVE_MODULES")
-	if imageDirectory != "" {
+	for _, imageDirectory := range filepath.SplitList(os.Getenv("HWC_NATIVE_MODULES")) {
 
 		directoryContents, err := ioutil.ReadDir(imageDirectory)
 		if err != nil {
