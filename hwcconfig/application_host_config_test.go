@@ -1,6 +1,7 @@
 package hwcconfig_test
 
 import (
+	"encoding/xml"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -10,6 +11,27 @@ import (
 
 	"code.cloudfoundry.org/hwc/hwcconfig"
 )
+
+type Configuration struct {
+	XMLName         xml.Name `xml:"configuration"`
+	Junk            string   `xml:"junk,attr"`
+	SystemWebServer struct {
+		Security struct {
+			Authentication struct {
+				WindowsAuthentication struct {
+					Enabled                  string `xml:"enabled,attr"`
+					AuthPersistNonNTLM       string `xml:"authPersistNonNTLM,attr"`
+					AuthPersistSingleRequest string `xml:"authPersistSingleRequest,attr"`
+					Providers                struct {
+						Add []struct {
+							Value string `xml:"value,attr"`
+						} `xml:"add"`
+					} `xml:"providers"`
+				} `xml:"windowsAuthentication"`
+			} `xml:"authentication"`
+		} `xml:"security"`
+	} `xml:"system.webServer"`
+}
 
 var _ bool = Describe("ApplicationHostConfig", func() {
 	var (
@@ -117,6 +139,30 @@ var _ bool = Describe("ApplicationHostConfig", func() {
 			err, _ = hwcconfig.New(listenPort, rootPath, tmpPath, contextPath, uuid)
 			Expect(err).To(HaveOccurred())
 			Expect(err).To(MatchError("HWC_NATIVE_MODULES does not match required directory structure. See hwc README for detailed instructions."))
+		})
+	})
+
+	Context("When windowsauthentication is defined", func() {
+		It("adds secure windows auth config values to applicationHost.config", func() {
+			var err error
+
+			listenPort, rootPath, tmpPath, contextPath, uuid := basicDeps(workingDirectoryPath)
+
+			err, hwcConfig := hwcconfig.New(listenPort, rootPath, tmpPath, contextPath, uuid)
+			Expect(err).ToNot(HaveOccurred())
+			configFileContents, err := ioutil.ReadFile(hwcConfig.ApplicationHostConfigPath)
+			Expect(err).ToNot(HaveOccurred())
+
+			var config Configuration
+			err = xml.Unmarshal(configFileContents, &config)
+			Expect(err).ToNot(HaveOccurred())
+
+			Expect(config.SystemWebServer.Security.Authentication.WindowsAuthentication.Enabled).To(Equal("true"), "Missing Enabled")
+			Expect(config.SystemWebServer.Security.Authentication.WindowsAuthentication.AuthPersistNonNTLM).To(Equal("true"), "Missing AuthPersistNonNTLM")
+			Expect(config.SystemWebServer.Security.Authentication.WindowsAuthentication.AuthPersistSingleRequest).To(Equal("true"), "Missing AuthPersistSingleRequest")
+
+			Expect(config.SystemWebServer.Security.Authentication.WindowsAuthentication.Providers.Add).To(HaveLen(1))
+			Expect(config.SystemWebServer.Security.Authentication.WindowsAuthentication.Providers.Add[0].Value).To(Equal("Negotiate"), "Not Negotiate")
 		})
 	})
 })

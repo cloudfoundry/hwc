@@ -10,7 +10,7 @@ import (
 	"text/template"
 )
 
-//TOOD: refactor into object - make immutable
+// TODO: refactor into object - make immutable
 var baselineNativeModules = [...]map[string]string{
 	{"Name": "UriCacheModule", "Image": `%windir%\System32\inetsrv\cachuri.dll`},
 	{"Name": "FileCacheModule", "Image": `%windir%\System32\inetsrv\cachfile.dll`},
@@ -355,9 +355,8 @@ const applicationHostConfigTemplate = `<?xml version="1.0" encoding="UTF-8"?>
 
         <iisClientCertificateMappingAuthentication />
 
-        <windowsAuthentication enabled="true">
+        <windowsAuthentication authPersistNonNTLM="true" authPersistSingleRequest="true" enabled="true">
           <providers>
-            <add value="NTLM" />
             <add value="Negotiate" />
           </providers>
         </windowsAuthentication>
