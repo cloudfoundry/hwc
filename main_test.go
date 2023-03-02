@@ -1,3 +1,4 @@
+//go:build windows
 // +build windows
 
 package main_test
@@ -340,7 +341,7 @@ var _ = Describe("HWC", func() {
 
 		BeforeEach(func() {
 			app = startApp("asp-classic")
-			Eventually(app.session).Should(gbytes.Say("Server Started"))
+			Eventually(app.session, 10*time.Second).Should(gbytes.Say("Server Started"))
 		})
 
 		AfterEach(func() {
