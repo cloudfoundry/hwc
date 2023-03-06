@@ -1,6 +1,6 @@
 module code.cloudfoundry.org/hwc
 
-go 1.19
+go 1.20
 
 require (
 	github.com/cloudfoundry-community/go-cfenv v1.17.1-0.20171115121958-e84b5c116637
