@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/gexec"
 )
@@ -22,7 +22,7 @@ func TestHWC(t *testing.T) {
 var _ = BeforeSuite(func() {
 	var err error
 
-	rand.Seed(time.Now().UnixNano() + int64(GinkgoParallelNode()))
+	rand.Seed(GinkgoRandomSeed() + int64(GinkgoParallelProcess()))
 
 	hwcBinPath, err = gexec.BuildWithEnvironment("code.cloudfoundry.org/hwc", []string{"CGO_ENABLED=1", "GO_EXTLINK_ENABLED=1"})
 	Expect(err).ToNot(HaveOccurred())
