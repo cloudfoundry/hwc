@@ -12,6 +12,7 @@ type HwcConfig struct {
 	TempDirectory                 string
 	IISCompressedFilesDirectory   string
 	ASPCompiledTemplatesDirectory string
+	BindAddress                   string
 
 	Applications              []*HwcApplication
 	AspnetConfigPath          string
@@ -62,6 +63,12 @@ func New(port int, rootPath, tmpPath, contextPath, uuid string) (error, *HwcConf
 	config.ApplicationHostConfigPath = filepath.Join(configPath, "ApplicationHost.config")
 	config.AspnetConfigPath = filepath.Join(configPath, "Aspnet.config")
 	config.WebConfigPath = filepath.Join(configPath, "Web.config")
+
+	if os.Getenv("BIND_ADDRESS") == "" {
+		config.BindAddress = "*"
+	} else {
+		config.BindAddress = os.Getenv("BIND_ADDRESS")
+	}
 
 	err = config.generateApplicationHostConfig()
 	if err != nil {
