@@ -51,14 +51,9 @@ Enable-WindowsOptionalFeature -Online -All -FeatureName IIS-HostableWebCore
 Enable-WindowsOptionalFeature -Online -All -FeatureName IIS-ASPNET45
 ```
 
-Install ginkgo:
-```
-go get github.com/onsi/ginkgo/ginkgo
-```
-
 Execute the tests: (from an administrator console)
 ```
-& "path\to\ginkgo.exe" -r -race
+go run github.com/onsi/ginkgo/v2/ginkgo -p -r -race -keep-going
 ```
 
 This will run the test suite which spins up several web applications hosted under hwc.exe and validates the behavior.
