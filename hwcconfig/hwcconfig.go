@@ -64,10 +64,12 @@ func New(port int, rootPath, tmpPath, contextPath, uuid string) (error, *HwcConf
 	config.AspnetConfigPath = filepath.Join(configPath, "Aspnet.config")
 	config.WebConfigPath = filepath.Join(configPath, "Web.config")
 
-	if os.Getenv("BIND_ADDRESS") == "" {
-		config.BindAddress = "*"
+	bindAddress, exists := os.LookupEnv("HWC_BIND_ADDRESS")
+
+	if exists {
+		config.BindAddress = bindAddress
 	} else {
-		config.BindAddress = os.Getenv("BIND_ADDRESS")
+		config.BindAddress = "*"
 	}
 
 	err = config.generateApplicationHostConfig()
