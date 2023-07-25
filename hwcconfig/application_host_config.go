@@ -239,7 +239,7 @@ const applicationHostConfigTemplate = `<?xml version="1.0" encoding="UTF-8"?>
         </application>
         {{ end }}
         <bindings>
-          <binding protocol="http" bindingInformation="*:{{.Config.Port}}:" />
+          <binding protocol="http" bindingInformation="{{.Config.BindAddress}}:{{.Config.Port}}:" />
         </bindings>
       </site>
     </sites>
