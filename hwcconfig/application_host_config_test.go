@@ -1,3 +1,6 @@
+//go:build windows
+// +build windows
+
 package hwcconfig_test
 
 import (
