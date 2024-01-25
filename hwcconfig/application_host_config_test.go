@@ -8,6 +8,7 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"strings"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -83,12 +84,11 @@ var _ bool = Describe("ApplicationHostConfig", func() {
 	})
 
 	Context("When custom modules are specified", func() {
-		var (
-			modulesDirectoryPath string
-		)
+		var someDir, otherDir string
 
 		BeforeEach(func() {
-			modulesDirectoryPath = filepath.Join(workingDirectoryPath, "modules", "hwc", "native-modules")
+			someDir = filepath.Join(workingDirectoryPath, "some-modules", "hwc", "native-modules")
+			otherDir = filepath.Join(workingDirectoryPath, "other-modules", "hwc", "native-modules")
 		})
 
 		AfterEach(func() {
@@ -98,16 +98,19 @@ var _ bool = Describe("ApplicationHostConfig", func() {
 		It("adds regular and linked DLLs to applicationHost.config", func() {
 			var err error
 
-			err = os.Setenv("HWC_NATIVE_MODULES", modulesDirectoryPath)
+			err = os.Setenv("HWC_NATIVE_MODULES", strings.Join([]string{someDir, otherDir}, string(os.PathListSeparator)))
 			Expect(err).ToNot(HaveOccurred())
 
-			dllFilePath := filepath.Join(modulesDirectoryPath, "exampleModule", "mymodule.dll")
-			createAllFiles(dllFilePath)
+			someDLLFilePath := filepath.Join(someDir, "someModule", "mymodule.dll")
+			createAllFiles(someDLLFilePath)
+
+			otherDLLFilePath := filepath.Join(otherDir, "otherModule", "mymodule.dll")
+			createAllFiles(otherDLLFilePath)
 
 			linkSourcePath := filepath.Join(workingDirectoryPath, "sourceModule.dll")
 			createAllFiles(linkSourcePath)
 
-			linkFilePath := filepath.Join(modulesDirectoryPath, "myLinkedModule", "linkModule.dll")
+			linkFilePath := filepath.Join(someDir, "myLinkedModule", "linkModule.dll")
 			err = os.MkdirAll(filepath.Dir(linkFilePath), 0777)
 			Expect(err).ToNot(HaveOccurred())
 
@@ -121,11 +124,14 @@ var _ bool = Describe("ApplicationHostConfig", func() {
 			configFileContents, err := ioutil.ReadFile(hwcConfig.ApplicationHostConfigPath)
 			Expect(err).ToNot(HaveOccurred())
 
-			Expect(string(configFileContents)).To(ContainSubstring("<add name=\"exampleModule\" image=\"" + dllFilePath + "\""))
-			Expect(string(configFileContents)).To(ContainSubstring("<add name=\"exampleModule\" lockItem=\"true\" />"))
+			Expect(string(configFileContents)).To(ContainSubstring("<add name=\"someModule\" image=\"" + someDLLFilePath + "\""))
+			Expect(string(configFileContents)).To(ContainSubstring("<add name=\"someModule\" lockItem=\"true\" />"))
 
 			Expect(string(configFileContents)).To(ContainSubstring("<add name=\"myLinkedModule\" image=\"" + linkFilePath + "\""))
 			Expect(string(configFileContents)).To(ContainSubstring("<add name=\"myLinkedModule\" lockItem=\"true\" />"))
+
+			Expect(string(configFileContents)).To(ContainSubstring("<add name=\"otherModule\" image=\"" + otherDLLFilePath + "\""))
+			Expect(string(configFileContents)).To(ContainSubstring("<add name=\"otherModule\" lockItem=\"true\" />"))
 		})
 
 		It("returns error when user provided directory is empty", func() {
