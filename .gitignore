@@ -24,8 +24,6 @@ _testmain.go
 *.test
 *.prof
 
-bin/
-
 # Intellij
 .idea/
 
