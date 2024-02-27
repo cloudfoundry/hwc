@@ -1,7 +1,6 @@
 package hwcconfig
 
 import (
-	"errors"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -94,7 +93,7 @@ func (c *HwcConfig) generateApplicationHostConfig() error {
 	}
 
 	if len(missing) > 0 {
-		return errors.New(fmt.Sprintf("Missing required DLLs:\n%s", strings.Join(missing, ",\n")))
+		return fmt.Errorf("Missing required DLLs:\n%s", strings.Join(missing, ",\n"))
 	}
 
 	rewrite := false
