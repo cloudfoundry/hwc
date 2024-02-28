@@ -78,6 +78,7 @@ var _ bool = Describe("ApplicationHostConfig", func() {
 			listenPort, rootPath, tmpPath, contextPath, uuid := basicDeps(workingDirectoryPath)
 
 			err, hwcConfig := hwcconfig.New(listenPort, rootPath, tmpPath, contextPath, uuid)
+			Expect(err).ToNot(HaveOccurred())
 			_, err = os.Stat(hwcConfig.ApplicationHostConfigPath)
 			Expect(err).ToNot(HaveOccurred())
 		})
