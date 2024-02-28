@@ -232,7 +232,7 @@ var _ = Describe("HWC", func() {
 			Expect(res.StatusCode).To(Equal(200))
 
 			var customHeaders []string
-			for h, _ := range res.Header {
+			for h := range res.Header {
 				if strings.HasPrefix(h, "X-") {
 					customHeaders = append(customHeaders, strings.ToLower(h))
 				}
