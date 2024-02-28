@@ -63,7 +63,7 @@ func main() {
 			checkErr(fmt.Errorf("Getting CF application context path: %v", err))
 		}
 
-		fmt.Println(fmt.Sprintf("Context Path %s", contextPath))
+		fmt.Printf("Context Path %s\n", contextPath)
 	}
 
 	uuid, err := generateUUID()
