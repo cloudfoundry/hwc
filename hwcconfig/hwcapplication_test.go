@@ -1,7 +1,6 @@
 package hwcconfig_test
 
 import (
-	"io/ioutil"
 	"os"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -15,9 +14,9 @@ var _ = Describe("HwcApplication", func() {
 	var rootPath string
 	BeforeEach(func() {
 		var err error
-		defaultRootPath, err = ioutil.TempDir("", "wwwroot")
+		defaultRootPath, err = os.MkdirTemp("", "wwwroot")
 		Expect(err).NotTo(HaveOccurred())
-		rootPath, err = ioutil.TempDir("", "app")
+		rootPath, err = os.MkdirTemp("", "app")
 		Expect(err).NotTo(HaveOccurred())
 	})
 

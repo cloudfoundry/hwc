@@ -4,7 +4,7 @@ import (
 	"encoding/xml"
 	"fmt"
 	"io"
-	"io/ioutil"
+	"os"
 	_ "runtime/cgo"
 	"strings"
 )
@@ -32,7 +32,7 @@ type HTTPCompression struct {
 }
 
 func ValidateWebConfig(path string, writer io.Writer) error {
-	data, err := ioutil.ReadFile(path)
+	data, err := os.ReadFile(path)
 	if err != nil {
 		return err
 	}
