@@ -487,9 +487,14 @@ func copyDirectory(srcDir, destDir string) error {
 		return err
 	}
 
-	for _, f := range files {
-		src := filepath.Join(srcDir, f.Name())
-		dest := filepath.Join(destDir, f.Name())
+	for _, de := range files {
+		src := filepath.Join(srcDir, de.Name())
+		dest := filepath.Join(destDir, de.Name())
+
+		f, err := de.Info()
+		if err != nil {
+			return err
+		}
 
 		if f.IsDir() {
 			err = os.MkdirAll(dest, f.Mode())
