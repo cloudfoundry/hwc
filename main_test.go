@@ -7,7 +7,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"math/rand"
 	"net/http"
 	"os"
 	"os/exec"
@@ -473,7 +472,7 @@ func startAppWithEnv(fixtureName string, env []string, badConfigtest bool) hwcAp
 func newRandomPort() int64 {
 	const maxPort = 60000
 	const minPort = 1025
-	return rand.Int63n(maxPort-minPort) + minPort
+	return randomGenerator.Int63n(maxPort-minPort) + minPort
 }
 
 func copyDirectory(srcDir, destDir string) error {
