@@ -5,7 +5,6 @@ package hwcconfig_test
 
 import (
 	"encoding/xml"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
@@ -46,7 +45,7 @@ var _ bool = Describe("ApplicationHostConfig", func() {
 		var err error
 		err = os.MkdirAll(filepath.Dir(targetFilePath), 0777)
 		Expect(err).ToNot(HaveOccurred())
-		err = ioutil.WriteFile(targetFilePath, []byte(""), 0666)
+		err = os.WriteFile(targetFilePath, []byte(""), 0666)
 		Expect(err).ToNot(HaveOccurred())
 	}
 
@@ -63,7 +62,7 @@ var _ bool = Describe("ApplicationHostConfig", func() {
 	BeforeEach(func() {
 		var err error
 
-		workingDirectoryPath, err = ioutil.TempDir("", "hwcconfig_test")
+		workingDirectoryPath, err = os.MkdirTemp("", "hwcconfig_test")
 		Expect(err).ToNot(HaveOccurred())
 	})
 
@@ -78,6 +77,7 @@ var _ bool = Describe("ApplicationHostConfig", func() {
 			listenPort, rootPath, tmpPath, contextPath, uuid := basicDeps(workingDirectoryPath)
 
 			err, hwcConfig := hwcconfig.New(listenPort, rootPath, tmpPath, contextPath, uuid)
+			Expect(err).ToNot(HaveOccurred())
 			_, err = os.Stat(hwcConfig.ApplicationHostConfigPath)
 			Expect(err).ToNot(HaveOccurred())
 		})
@@ -121,7 +121,7 @@ var _ bool = Describe("ApplicationHostConfig", func() {
 
 			err, hwcConfig := hwcconfig.New(listenPort, rootPath, tmpPath, contextPath, uuid)
 			Expect(err).ToNot(HaveOccurred())
-			configFileContents, err := ioutil.ReadFile(hwcConfig.ApplicationHostConfigPath)
+			configFileContents, err := os.ReadFile(hwcConfig.ApplicationHostConfigPath)
 			Expect(err).ToNot(HaveOccurred())
 
 			Expect(string(configFileContents)).To(ContainSubstring("<add name=\"someModule\" image=\"" + someDLLFilePath + "\""))
@@ -159,7 +159,7 @@ var _ bool = Describe("ApplicationHostConfig", func() {
 
 			err, hwcConfig := hwcconfig.New(listenPort, rootPath, tmpPath, contextPath, uuid)
 			Expect(err).ToNot(HaveOccurred())
-			configFileContents, err := ioutil.ReadFile(hwcConfig.ApplicationHostConfigPath)
+			configFileContents, err := os.ReadFile(hwcConfig.ApplicationHostConfigPath)
 			Expect(err).ToNot(HaveOccurred())
 
 			var config Configuration

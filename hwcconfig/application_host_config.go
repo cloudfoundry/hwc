@@ -1,9 +1,7 @@
 package hwcconfig
 
 import (
-	"errors"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
@@ -55,7 +53,7 @@ func (c *HwcConfig) generateApplicationHostConfig() error {
 
 	for _, imageDirectory := range filepath.SplitList(os.Getenv("HWC_NATIVE_MODULES")) {
 
-		directoryContents, err := ioutil.ReadDir(imageDirectory)
+		directoryContents, err := os.ReadDir(imageDirectory)
 		if err != nil {
 			return err
 		}
@@ -63,7 +61,7 @@ func (c *HwcConfig) generateApplicationHostConfig() error {
 		for _, subDirectoryFileInfo := range directoryContents {
 			name := subDirectoryFileInfo.Name()
 			subDirectoryPath := filepath.Join(imageDirectory, name)
-			subDirectoryContents, err := ioutil.ReadDir(subDirectoryPath)
+			subDirectoryContents, err := os.ReadDir(subDirectoryPath)
 			if err != nil {
 				return err
 			}
@@ -94,7 +92,7 @@ func (c *HwcConfig) generateApplicationHostConfig() error {
 	}
 
 	if len(missing) > 0 {
-		return errors.New(fmt.Sprintf("Missing required DLLs:\n%s", strings.Join(missing, ",\n")))
+		return fmt.Errorf("Missing required DLLs:\n%s", strings.Join(missing, ",\n"))
 	}
 
 	rewrite := false

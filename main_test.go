@@ -7,8 +7,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
-	"math/rand"
 	"net/http"
 	"os"
 	"os/exec"
@@ -58,22 +56,22 @@ var _ = Describe("HWC", func() {
 		BeforeEach(func() {
 			var err error
 
-			someDir, err = ioutil.TempDir("", "some-modules-dir")
+			someDir, err = os.MkdirTemp("", "some-modules-dir")
 			Expect(err).NotTo(HaveOccurred())
 
 			err = os.MkdirAll(filepath.Join(someDir, "SomeModule"), os.ModePerm)
 			Expect(err).NotTo(HaveOccurred())
 
-			err = ioutil.WriteFile(filepath.Join(someDir, "SomeModule", "some-module.html"), nil, 0777)
+			err = os.WriteFile(filepath.Join(someDir, "SomeModule", "some-module.html"), nil, 0777)
 			Expect(err).ToNot(HaveOccurred())
 
-			otherDir, err = ioutil.TempDir("", "other-modules-dir")
+			otherDir, err = os.MkdirTemp("", "other-modules-dir")
 			Expect(err).NotTo(HaveOccurred())
 
 			err = os.MkdirAll(filepath.Join(otherDir, "OtherModule"), os.ModePerm)
 			Expect(err).NotTo(HaveOccurred())
 
-			err = ioutil.WriteFile(filepath.Join(otherDir, "OtherModule", "other-module.html"), nil, 0777)
+			err = os.WriteFile(filepath.Join(otherDir, "OtherModule", "other-module.html"), nil, 0777)
 			Expect(err).ToNot(HaveOccurred())
 		})
 
@@ -196,7 +194,7 @@ var _ = Describe("HWC", func() {
 			Expect(err).ToNot(HaveOccurred())
 			Expect(res.StatusCode).To(Equal(200))
 
-			body, err := ioutil.ReadAll(res.Body)
+			body, err := io.ReadAll(res.Body)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(string(body)).To(Equal(fmt.Sprintf(`"hello i am %s running on http://localhost:%d/"`, "nora", app.port)))
 		})
@@ -232,7 +230,7 @@ var _ = Describe("HWC", func() {
 			Expect(res.StatusCode).To(Equal(200))
 
 			var customHeaders []string
-			for h, _ := range res.Header {
+			for h := range res.Header {
 				if strings.HasPrefix(h, "X-") {
 					customHeaders = append(customHeaders, strings.ToLower(h))
 				}
@@ -272,7 +270,7 @@ var _ = Describe("HWC", func() {
 			Expect(err).ToNot(HaveOccurred())
 			Expect(res.StatusCode).To(Equal(200))
 
-			body, err := ioutil.ReadAll(res.Body)
+			body, err := io.ReadAll(res.Body)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(string(body)).To(Equal(fmt.Sprintf(`"hello i am %s running on http://localhost:%d%s"`,
 				"nora", app.port, contextPath)))
@@ -307,7 +305,7 @@ var _ = Describe("HWC", func() {
 			res, err := http.Get(url)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(res.StatusCode).To(Equal(200))
-			body, err := ioutil.ReadAll(res.Body)
+			body, err := io.ReadAll(res.Body)
 			Expect(err).ToNot(HaveOccurred())
 			domainAppId1 := string(body)
 
@@ -315,7 +313,7 @@ var _ = Describe("HWC", func() {
 			res, err = http.Get(url)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(res.StatusCode).To(Equal(200))
-			body, err = ioutil.ReadAll(res.Body)
+			body, err = io.ReadAll(res.Body)
 			Expect(err).ToNot(HaveOccurred())
 			domainAppId2 := string(body)
 
@@ -366,7 +364,7 @@ var _ = Describe("HWC", func() {
 			Expect(err).ToNot(HaveOccurred())
 			Expect(res.StatusCode).To(Equal(200))
 
-			body, err := ioutil.ReadAll(res.Body)
+			body, err := io.ReadAll(res.Body)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(string(body)).To(Equal("Hello World!"))
 		})
@@ -433,10 +431,10 @@ func startApp(fixtureName string) hwcApp {
 func startAppWithEnv(fixtureName string, env []string, badConfigtest bool) hwcApp {
 	cmd := exec.Command(hwcBinPath)
 
-	profileDir, err := ioutil.TempDir("", "hwcappprofile")
+	profileDir, err := os.MkdirTemp("", "hwcappprofile")
 	Expect(err).ToNot(HaveOccurred())
 
-	appDir, err := ioutil.TempDir("", "hwctestapp")
+	appDir, err := os.MkdirTemp("", "hwctestapp")
 	Expect(err).ToNot(HaveOccurred())
 	wd, err := os.Getwd()
 	Expect(err).ToNot(HaveOccurred())
@@ -474,7 +472,7 @@ func startAppWithEnv(fixtureName string, env []string, badConfigtest bool) hwcAp
 func newRandomPort() int64 {
 	const maxPort = 60000
 	const minPort = 1025
-	return rand.Int63n(maxPort-minPort) + minPort
+	return randomGenerator.Int63n(maxPort-minPort) + minPort
 }
 
 func copyDirectory(srcDir, destDir string) error {
@@ -483,14 +481,19 @@ func copyDirectory(srcDir, destDir string) error {
 		return errors.New("destination dir must exist")
 	}
 
-	files, err := ioutil.ReadDir(srcDir)
+	files, err := os.ReadDir(srcDir)
 	if err != nil {
 		return err
 	}
 
-	for _, f := range files {
-		src := filepath.Join(srcDir, f.Name())
-		dest := filepath.Join(destDir, f.Name())
+	for _, de := range files {
+		src := filepath.Join(srcDir, de.Name())
+		dest := filepath.Join(destDir, de.Name())
+
+		f, err := de.Info()
+		if err != nil {
+			return err
+		}
 
 		if f.IsDir() {
 			err = os.MkdirAll(dest, f.Mode())
@@ -585,6 +588,6 @@ func successfulRequest(url string) http.Header {
 	}
 	defer res.Body.Close()
 	Expect(res.StatusCode).To(Equal(200))
-	ioutil.ReadAll(res.Body)
+	io.ReadAll(res.Body)
 	return res.Header
 }

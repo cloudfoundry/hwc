@@ -19,10 +19,12 @@ func TestHWC(t *testing.T) {
 	RunSpecs(t, "HWC")
 }
 
+var randomGenerator *rand.Rand
+
 var _ = BeforeSuite(func() {
 	var err error
 
-	rand.Seed(GinkgoRandomSeed() + int64(GinkgoParallelProcess()))
+	randomGenerator = rand.New(rand.NewSource(GinkgoRandomSeed() + int64(GinkgoParallelProcess())))
 
 	hwcBinPath, err = gexec.BuildWithEnvironment("code.cloudfoundry.org/hwc", []string{"CGO_ENABLED=1", "GO_EXTLINK_ENABLED=1"})
 	Expect(err).ToNot(HaveOccurred())

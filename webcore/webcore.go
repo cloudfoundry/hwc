@@ -34,12 +34,23 @@ func (w *WebCore) Activate(appHostConfigPath, rootWebConfigPath, instanceName st
 			return err
 		}
 
-		var nargs uintptr = 3
-		r1, _, exitCode := syscall.Syscall(uintptr(webCoreActivate),
-			nargs,
-			uintptr(unsafe.Pointer(syscall.StringToUTF16Ptr(appHostConfigPath))),
-			uintptr(unsafe.Pointer(syscall.StringToUTF16Ptr(rootWebConfigPath))),
-			uintptr(unsafe.Pointer(syscall.StringToUTF16Ptr(instanceName))))
+		appHostConfigPathPtr, err := syscall.UTF16PtrFromString(appHostConfigPath)
+		if err != nil {
+			return err
+		}
+		rootWebConfigPathPtr, err := syscall.UTF16PtrFromString(rootWebConfigPath)
+		if err != nil {
+			return err
+		}
+		instanceNamePtr, err := syscall.UTF16PtrFromString(instanceName)
+		if err != nil {
+			return err
+		}
+
+		r1, _, exitCode := syscall.SyscallN(uintptr(webCoreActivate),
+			uintptr(unsafe.Pointer(appHostConfigPathPtr)),
+			uintptr(unsafe.Pointer(rootWebConfigPathPtr)),
+			uintptr(unsafe.Pointer(instanceNamePtr)))
 		if exitCode != 0 {
 			return fmt.Errorf("WebCoreActivate returned exit code: %d", exitCode)
 		}
@@ -61,9 +72,8 @@ func (w *WebCore) Shutdown(immediate int, instanceName string) error {
 			return err
 		}
 
-		var nargs uintptr = 1
-		_, _, exitCode := syscall.Syscall(uintptr(webCoreShutdown),
-			nargs, uintptr(unsafe.Pointer(&immediate)), 0, 0)
+		_, _, exitCode := syscall.SyscallN(uintptr(webCoreShutdown),
+			uintptr(unsafe.Pointer(&immediate)), 0, 0)
 		if exitCode != 0 {
 			return fmt.Errorf("WebCoreShutdown returned exit code: %d", exitCode)
 		}
