@@ -387,7 +387,7 @@ var _ = Describe("HWC", func() {
 
 		BeforeEach(func() {
 			app = startAppWithEnv("nora", []string{}, true)
-			Eventually(app.session).Should(gbytes.Say("Server Started"))
+			Eventually(app.session, 2*time.Second).Should(gbytes.Say("Server Started"))
 		})
 
 		AfterEach(func() {
